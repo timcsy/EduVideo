@@ -1,0 +1,13 @@
+{
+  "version": "0.7.5",
+  "structureVersion": "2",
+  "language": "en",
+  "createdAt": "2026-09-12T14:04:05.688Z",
+  "tools": [
+    "agents-md"
+  ],
+  "skillDirs": [
+    ".agents/skills"
+  ],
+  "updatedAt": "2026-09-12T14:05:55.625Z"
+}
