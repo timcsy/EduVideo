@@ -16,6 +16,8 @@ export function mountCaptions(actions){
   const recognition=document.createElement('details');recognition.className='caption-recognition';recognition.innerHTML='<summary>自動辨識與模型</summary>';const first=$('caption-provider').closest('label');first.before(recognition);let n=first;while(n){const next=n.nextElementSibling;recognition.append(n);if(n.id==='caption-cancel')break;n=next;}
   const native=Boolean(window.studioNative?.speechModels);for(const model of SPEECH_MODELS.filter(item=>native||item.browser))$('caption-model').append(new Option(`${model.label} · ${formatModelSize(model.bytes)}`,model.id));$('caption-model').value=native?'large-v3-turbo-q5_0':'tiny';
   $('caption-list').before(Object.assign(document.createElement('button'),{id:'caption-resegment',textContent:'重新自然斷句（全片）',onclick:()=>actions.resegment($('caption-phrasing').value)}));
+  $('caption-list').before(Object.assign(document.createElement('button'),{id:'caption-rebuild-timing',textContent:'從音訊重新辨識（修復時間）',onclick:()=>{recognition.open=true;actions.recognize(true,settings());}}));
+  $('caption-list').before(Object.assign(document.createElement('p'),{className:'hint',textContent:'重新斷句保留現有文字；舊字幕若有時間錯位，請從音訊重新辨識。此操作會取代字幕，可復原。'}));
   const workspace=mountCaptionWorkspace($('caption-list'),actions);pane.querySelector('.caption-appearance').open=false;
   pane.append($('caption-list'));
   let models=[],modelBusy=false,hadCues;
@@ -34,6 +36,6 @@ export function mountCaptions(actions){
   providerChanged();refreshModels();
   return {sync(project,index,busy){const segment=project.segments[index],style=project.captionStyle||{};for(const id of ['caption-add','caption-clear','caption-import','caption-export'])$(id).disabled=busy||!segment;for(const id of ['caption-recognize','caption-recognize-all'])$(id).disabled=busy||modelBusy||!segment;
     for(const key of styleKeys){const input=$(`caption-${key}`),fallback={enabled:true,preset:'plate',size:32,position:'bottom',color:'#ffffff',accentColor:'#6aa9ff',backgroundColor:'#000000',backgroundOpacity:.72,outlineColor:'#000000',outlineWidth:3,fontWeight:'600'}[key];if(document.activeElement!==input){if(input.type==='checkbox')input.checked=style[key]??fallback;else input.value=style[key]??fallback;}input.disabled=busy;}updatePreview();
-    workspace.sync(project,index,busy);$('caption-resegment').disabled=busy||!project.segments.some(s=>s.captions?.length);const hasCues=project.segments.some(s=>s.captions?.length);if(hadCues!==hasCues){hadCues=hasCues;recognition.open=!hadCues;}
+    workspace.sync(project,index,busy);$('caption-resegment').disabled=busy||!project.segments.some(s=>s.captions?.length);$('caption-rebuild-timing').disabled=busy||modelBusy||!segment;const hasCues=project.segments.some(s=>s.captions?.length);if(hadCues!==hasCues){hadCues=hasCues;recognition.open=!hadCues;}
   },update:time=>workspace.update(time),progress(text){$('caption-progress').textContent=text;},working(value){$('caption-cancel').hidden=!value;if(value)recognition.open=true;},refreshModels};
 }

@@ -332,13 +332,13 @@ timelineUI=mountTimeline({getState:()=>({project,time,audio:takeLandmarks}),seek
 let speechRequestController=null,modelDownloadProgress=null,modelDownloadController=null;
 window.studioNative?.onModelProgress(value=>modelDownloadProgress?.(value));
 async function recognizeCaptions(all,settings){await guarded(async()=>{const indexes=all?project.segments.map((_,i)=>i):[selected];if(indexes.some(i=>project.segments[i]?.captions?.length)&&!confirm('重新辨識會取代所選範圍的字幕，可用復原找回。繼續？'))return;
-    personEditing=false;const ids=[...new Set(indexes.map(i=>project.segments[i]?.takeId).filter(Boolean))],results={};speechCancelled=false;speechRequestController=new AbortController();captionUI.working(true);
+    personEditing=false;const ids=[...new Set(indexes.map(i=>project.segments[i]?.takeId).filter(Boolean))],results={},sources={};speechCancelled=false;speechRequestController=new AbortController();captionUI.working(true);
     try{for(let i=0;i<ids.length;i++){const id=ids[i],blob=assets[id].camera,duration=project.takes.find(t=>t.id===id).duration;captionUI.progress(`${settings.provider==='api'?'API':'離線'}辨識 ${i+1}/${ids.length} 份素材…`);if(speechCancelled)throw new Error('已取消字幕辨識');let cues;
         if(settings.provider==='api')cues=await transcribeWithApi(blob,{endpoint:settings.endpoint,apiKey:settings.apiKey,model:settings.apiModel,language:settings.language,duration,signal:speechRequestController.signal});
         else if(window.studioNative?.transcribe)cues=await window.studioNative.transcribe(new Uint8Array(await blob.arrayBuffer()),{language:settings.language,modelId:settings.modelId});
         else cues=await transcribeInBrowser(blob,{language:settings.language,modelId:settings.modelId});
-        if(speechCancelled)throw new Error('已取消字幕辨識');results[id]=splitReadableCues(cues.map(c=>({...c,start:Math.max(0,c.start),end:Math.min(duration,c.end)})).filter(c=>c.end>c.start),{phrasing:settings.phrasing});}
-      await edit(p=>({...p,segments:p.segments.map((s,i)=>indexes.includes(i)?{...s,captions:structuredClone(results[s.takeId])}:s)}));const count=indexes.reduce((n,i)=>n+(project.segments[i].captions?.length||0),0);captionUI.progress(count?`辨識完成：${count} 句，請逐句校對。`:'未辨識到可用語音；可手動新增或匯入 SRT。');
+        if(speechCancelled)throw new Error('已取消字幕辨識');sources[id]={version:1,provider:settings.provider,model:settings.provider==='api'?settings.apiModel:settings.modelId,language:settings.language,cues:structuredClone(cues)};results[id]=splitReadableCues(cues.map(c=>({...c,start:Math.max(0,c.start),end:Math.min(duration,c.end)})).filter(c=>c.end>c.start),{phrasing:settings.phrasing});}
+      await edit(p=>({...p,takes:p.takes.map(t=>sources[t.id]?{...t,captionSource:sources[t.id]}:t),segments:p.segments.map((s,i)=>indexes.includes(i)?{...s,captions:structuredClone(results[s.takeId])}:s)}));const count=indexes.reduce((n,i)=>n+(project.segments[i].captions?.length||0),0);captionUI.progress(count?`辨識完成：${count} 句，已保留原始文字與時間資訊，請逐句校對。`:'未辨識到可用語音；可手動新增或匯入 SRT。');
     }catch(error){captionUI.progress(speechCancelled||error.name==='AbortError'?'已取消辨識，原有字幕未變更。':`辨識失敗：${error.message}`);if(!speechCancelled&&error.name!=='AbortError')throw error;}finally{speechRequestController=null;captionUI.working(false);}
   });}
 captionUI=mountCaptions({recognize:recognizeCaptions,cancel:()=>{speechCancelled=true;speechRequestController?.abort();window.studioNative?.cancelSpeech();captionUI.progress('正在取消辨識…');},seek:scrubTo,
@@ -349,7 +349,7 @@ captionUI=mountCaptions({recognize:recognizeCaptions,cancel:()=>{speechCancelled
   merge:(id,index=selected)=>guarded(()=>edit(p=>mergeCaption(p,index,id))),
   split:(id,caret,index=selected)=>guarded(()=>edit(p=>{const active=clipAt(p,time);if(active?.index!==index)throw new Error('請先把播放頭移到這句字幕中間');return splitCue(p,index,id,active.segment.in+active.elapsed*(active.segment.speed||1),caret);})),
   add:()=>guarded(()=>edit(p=>{const s=p.segments[selected];if(!s)throw new Error('請先選取片段');const active=clipAt(p,time),start=active?.index===selected?Math.min(s.out-.01,s.in+active.elapsed*(s.speed||1)):s.in;return updateSegment(p,selected,{captions:[...(s.captions||[]),{id:crypto.randomUUID(),start,end:Math.min(s.out,start+2*(s.speed||1)),text:'請輸入字幕'}]});})),
-  update:(id,change,index=selected)=>guarded(()=>edit(p=>{const s=p.segments[index];if(change.start!==undefined&&(change.start<s.in||change.start>=s.out)||change.end!==undefined&&(change.end>s.out||change.end<=s.in))throw new Error('字幕時間須在所屬片段內');return updateCue(p,index,id,{...change,words:undefined});})),
+  update:(id,change,index=selected)=>guarded(()=>edit(p=>{const s=p.segments[index];if(change.start!==undefined&&(change.start<s.in||change.start>=s.out)||change.end!==undefined&&(change.end>s.out||change.end<=s.in))throw new Error('字幕時間須在所屬片段內');return updateCue(p,index,id,{...change,timing:'edited'});})),
   remove:(id,index=selected)=>guarded(()=>edit(p=>updateSegment(p,index,{captions:(p.segments[index].captions||[]).filter(c=>c.id!==id)}))),clear:()=>guarded(async()=>{if(confirm('清除此片段的所有字幕？可復原。'))await edit(p=>updateSegment(p,selected,{captions:[]}));}),
   import:file=>guarded(async()=>{if(!file)return;const cues=parseSrt(await file.text());if(outputCues(project).length&&!confirm('SRT 使用整支成品的時間，將取代目前所有字幕，繼續？'))return;await edit(p=>applyOutputCues(p,cues));}),
   export:()=>guarded(()=>{const cues=outputCues(project);if(!cues.length)throw new Error('尚無可匯出的字幕');download(new Blob(['\uFEFF',serializeSrt(cues)],{type:'text/plain;charset=utf-8'}),'EduVideo.srt');}),style:(key,value)=>liveEdit(p=>({...p,captionStyle:{...p.captionStyle,[key]:value}}))});
@@ -362,10 +362,12 @@ $('source').onchange=()=>{document.body.dataset.source=$('source').value;if($('s
 document.addEventListener('keydown', e => {
   const mod=e.metaKey||e.ctrlKey,key=e.key.toLowerCase();
   if(mod&&key==='s'){e.preventDefault();if(!busy&&!recording)$('project-save').click();return;}
+  const focus=document.activeElement,transport=focus?.closest('#timeline');
+  if(e.code==='Space'&&transport&&focus?.matches('input[type=range]')&&!busy&&!recording&&mode==='edit'){e.preventDefault();if(!e.repeat)$('play').click();return;}
   if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || busy || recording || mode !== 'edit') return;
   if(mod&&['c','x','v','d'].includes(key)){e.preventDefault();clipCommand({c:'copy',x:'cut',v:'paste',d:'duplicate'}[key]);return;}
   if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stepTime((e.key==='ArrowLeft'?-1:1)*(e.shiftKey?1:1/30));return;}
-  const id=mod&&key==='z'?(e.shiftKey?'redo':'undo'):mod&&key==='b'?'split':e.code==='Space'?'play':key==='s'?'split':key==='i'?'trim-head':key==='o'?'trim-tail':e.key==='Delete'||e.key==='Backspace'?'delete':null;if(id){e.preventDefault();$(id).click();}
+  const id=mod&&key==='z'?(e.shiftKey?'redo':'undo'):mod&&key==='b'?'split':e.code==='Space'?'play':key==='s'?'split':key==='i'?'trim-head':key==='o'?'trim-tail':e.key==='Delete'||e.key==='Backspace'?'delete':null;if(id){e.preventDefault();if(id!=='play'||!e.repeat)$(id).click();}
 });
 document.body.dataset.mode = 'record';
 window.onbeforeunload = e => { if (recording || busy) { e.preventDefault(); e.returnValue = ''; } };

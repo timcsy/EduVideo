@@ -8,7 +8,7 @@ export function updateCue(project,index,id,change){const segment=project.segment
 export function parseSrt(text){const blocks=String(text).replace(/^\uFEFF/,'').replace(/\r/g,'').trim().split(/\n\s*\n/),cues=[];const stamp=s=>{const m=s.match(/^(\d+):(\d{2}):(\d{2})[,.](\d{3})$/);if(!m||Number(m[2])>59||Number(m[3])>59)throw new Error('字幕時間格式無效');return Number(m[1])*3600+Number(m[2])*60+Number(m[3])+Number(m[4])/1000;};for(const block of blocks){const lines=block.split('\n');const i=lines.findIndex(l=>l.includes('-->'));if(i<0)throw new Error('不是有效的 SRT 字幕');const m=lines[i].trim().match(/^(\S+)\s+-->\s+(\S+)/);if(!m)throw new Error('字幕時間格式無效');cues.push({id:cueId(),start:stamp(m[1]),end:stamp(m[2]),text:lines.slice(i+1).join('\n')});}return validateCues(cues);}
 export function serializeSrt(cues){const stamp=t=>{const ms=Math.round(Math.max(0,t)*1000);return `${String(Math.floor(ms/3600000)).padStart(2,'0')}:${String(Math.floor(ms/60000)%60).padStart(2,'0')}:${String(Math.floor(ms/1000)%60).padStart(2,'0')},${String(ms%1000).padStart(3,'0')}`;};return validateCues(cues).map((c,i)=>`${i+1}\n${stamp(c.start)} --> ${stamp(c.end)}\n${c.text}\n`).join('\n');}
 export function splitReadableCues(cues,{phrasing='natural'}={}){
-  return validateCues(cues).flatMap(cue=>{
+  const split=validateCues(cues).flatMap(cue=>{
     const text=cue.text.trim();if(!text)return [];
     const boundaries=new Set([0,text.length]);
     // Use language sentence boundaries first; never slice by a character count.
@@ -29,20 +29,31 @@ export function splitReadableCues(cues,{phrasing='natural'}={}){
       }
     }
     const words=[];let cursor=0;
-    for(const word of cue.words||[]){const token=String(word.text??word.word??'').trim();const at=text.indexOf(token,cursor);if(!token||at<0||!Number.isFinite(word.start)||!Number.isFinite(word.end)||word.end<=word.start)continue;words.push({...word,from:at,to:at+token.length});cursor=at+token.length;}
+    for(const word of cue.words||[]){const token=String(word.text??word.word??'').trim();const at=text.indexOf(token,cursor);if(!token||at<0||!Number.isFinite(word.start)||!Number.isFinite(word.end)||word.end<word.start)continue;const start=Math.max(cue.start,words.at(-1)?.end??cue.start,Math.min(cue.end,word.start)),end=Math.max(start,Math.min(cue.end,word.end));words.push({...word,text:token,start,end,from:at,to:at+token.length});cursor=at+token.length;}
     const wordStarts=new Set([...new Intl.Segmenter(undefined,{granularity:'word'}).segment(text)].map(w=>w.index));
-    if(phrasing!=='sentence')for(let i=1;i<words.length;i++)if(words[i].start-words[i-1].end>=.65&&wordStarts.has(words[i].from))boundaries.add(words[i].from);
+    if(phrasing!=='sentence')for(let i=1;i<words.length;i++)if(words[i].start-words[i-1].end>=.65&&wordStarts.has(words[i].from)&&! /^[呢嗎吧喔哦囉啦齁啊的了][\p{P}\s]*$/u.test(text.slice(words[i].from)))boundaries.add(words[i].from);
+    // Every split uses one shared source clock. Missing tokens interpolate only
+    // between their nearest audio anchors, never against the whole paragraph.
+    const clockAt=(position,side)=>{
+      const containing=words.find(w=>side==='start'?w.from<=position&&position<w.to:w.from<position&&position<=w.to);
+      if(containing)return containing.start+(containing.end-containing.start)*(position-containing.from)/(containing.to-containing.from);
+      const left=words.findLast(w=>w.to<=position),right=words.find(w=>w.from>=position);
+      if(side==='start'&&right&&!text.slice(position,right.from).replace(/[\p{P}\s]/gu,''))return right.start;
+      if(side==='end'&&left&&!text.slice(left.to,position).replace(/[\p{P}\s]/gu,''))return left.end;
+      const from=left?.to??0,to=right?.from??text.length,start=left?.end??cue.start,end=right?.start??cue.end;
+      return to===from?start:start+(end-start)*(position-from)/(to-from);
+    };
     const points=[...boundaries].sort((a,b)=>a-b),result=[];
     for(let i=1;i<points.length;i++){
-      const from=points[i-1],to=points[i],part=text.slice(from,to).trim();if(!part)continue;
-      const aligned=words.filter(w=>w.from>=from&&w.to<=to);
+      const raw=text.slice(points[i-1],points[i]),part=raw.trim();if(!part)continue;const from=points[i-1]+raw.indexOf(part),to=from+part.length;
+      const aligned=words.filter(w=>w.to>from&&w.from<to).map(w=>{const start=Math.max(from,w.from),end=Math.min(to,w.to);return {...w,text:text.slice(start,end),start:clockAt(start,'start'),end:clockAt(end,'end'),from:start,to:end};});
       const exact=aligned.length&&text.slice(from,to).replace(/\s/g,'')===aligned.map(w=>text.slice(w.from,w.to)).join('').replace(/\s/g,'');
-      const start=exact?Math.max(cue.start,aligned[0].start):cue.start+(cue.end-cue.start)*from/text.length;
-      const end=exact?Math.min(cue.end,aligned.at(-1).end):cue.start+(cue.end-cue.start)*to/text.length;
-      if(end>start)result.push({...cue,id:result.length?cueId():cue.id,text:part,start,end,words:exact?aligned.map(({from,to,...w})=>w):undefined,timing:exact?'aligned':'estimated'});
+      const start=clockAt(from,'start'),end=clockAt(to,'end');
+      if(end>start)result.push({...cue,id:result.length?cueId():cue.id,text:part,start,end,words:aligned.map(({from,to,...w})=>w),timing:exact?'aligned':words.length?'interpolated':'estimated'});
     }
     return result;
   });
+  const result=[];for(const cue of split){const previous=result.at(-1);if(previous&&/^[呢嗎吧喔哦囉啦齁啊的了][\p{P}\s]*$/u.test(cue.text)&&cue.start>=previous.end-.05&&cue.start-previous.end<=1.5){previous.text+=cue.text;previous.end=Math.max(previous.end,cue.end);previous.words=[...(previous.words||[]),...(cue.words||[])];if(previous.timing!==cue.timing)previous.timing='interpolated';}else result.push({...cue});}return result;
 }
 
 export function captionEntries(project){
