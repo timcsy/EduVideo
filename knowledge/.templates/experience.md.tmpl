@@ -1,87 +1,56 @@
-# Experience
+# 經驗
 
 <!--
-  This file captures distilled lessons from development — not a changelog,
-  but patterns that should influence future decisions.
+  這個檔案記錄從開發中提煉出的教訓，不是變更日誌，
+  而是應該影響未來決策的模式。
 
-  Each lesson records the gap between theory and reality.
-  Keep entries short and actionable. The full causal trail behind a lesson
-  (how it evolved, what was considered) belongs in knowledge/history/.
+  每條教訓都記錄理論與現實之間的落差。
+  教訓背後完整的因果軌跡（如何演變、考慮過什麼）放在 knowledge/history/。
 -->
 
-## Lessons
+## 教訓
 
 <!--
-  Add a new section for each significant lesson.
+  每個重要教訓新增一個區段。
 
-  Always: Actually happened · Lesson · Source.
+  必備：實際發生 · 教訓 · 來源。
 
-  Open with one of two, whichever fits:
-    - "Theory said"  — there was a gap between what you expected and what happened
-    - "How it hit"   — a procedural lesson with no gap ("I did this, and it saved
-                       me"). Forcing "Theory said" here invents a fake expectation,
-                       which is worse than an uneven format.
+  開頭使用下列其中一種，依情況選擇：
+    - 「理論原本認為」——預期與實際發生之間有落差
+    - 「它如何發生」——沒有落差的程序性教訓（我做了這件事，而且它幫上了忙）
+      強行使用「理論原本認為」會捏造不存在的預期，通常比格式不一致更糟。
 
-  Optional, and usually worth the space:
-    - "Doesn't apply when" — the boundary. A lesson with no boundary gets
-      over-applied, and you end up rewriting it once per context instead of
-      sharpening it once.
-    - "Related" — sideways links to sibling lessons. Which family a lesson belongs
-      to is often more useful than the lesson.
+  可選且通常值得保留：
+    - 「不適用於」——邊界。沒有邊界的教訓容易被過度套用，
+      最後每遇到一種情境就重寫一次，而不是把邊界磨得更精準。
+    - 「相關」——連到相鄰教訓。知道一條教訓屬於哪個家族，往往比單獨閱讀更有用。
 
-  Source is the leg that goes missing first, especially once you start adapting
-  this format. Drop it and the conclusion survives while the occasion that
-  produced it doesn't — you can no longer rebuild the thinking behind it.
+  來源是最容易遺失的一條腿，尤其在你開始調整這個格式後。
+  缺少來源，結論仍在，但產生結論的場合不見了，
+  之後就無法重建當時的思考。
 
-  Write the lesson as a *criterion*, not a *practice*. A practice ("split the
-  binding layer from rendering and it becomes testable") expires with the stack;
-  a criterion ("a measurer that changes what it measures isn't measuring it")
-  travels. A lesson is finished when it changes how some criterion gets written —
-  not when it has been written down.
-
-  Lessons others commonly record (see if any hit something you've been through):
-    1. Locate bugs with prints before reasoning about them
-    2. On big refactors, let the compiler / type-checker be your to-do list
-    3. Performance usually comes from the data model, not micro-optimization
-    4. "Wrong → understand → fix" beats "think it through perfectly first"
-    5. Don't skip TDD — "I'll add tests later" usually means 3× the debugging
+  把教訓寫成判準，而不是做法。做法會隨技術棧過期；
+  判準則能跨情境旅行。教訓真正完成的時刻，是它改變了某個判準的寫法，
+  而不是它被記錄下來的時刻。
 -->
 
-### [Lesson Title]
+### [教訓標題]
 
-- **Theory said**: [What you expected based on design, principles, or assumptions]
-- **Actually happened**: [What really occurred — be specific]
-- **Resolved by**: [How the gap was bridged — the fix, workaround, or insight]
-- **Lesson**: [One-sentence reusable criterion for next time]
-- **Doesn't apply when**: [The boundary — where this stops being true. Optional, but it's what stops the lesson being over-applied]
-- **Source**: [Link to history/ entry, episode, or PR/commit]
+- **理論原本認為**：[根據設計、原則或假設，你原本預期什麼]
+- **實際發生**：[實際發生什麼——請具體描述]
+- **如何解決**：[如何跨過落差——修正、替代方案或洞見]
+- **教訓**：[下一次可重複使用的一句判準]
+- **不適用於**：[停止成立的邊界，可選，但能避免教訓被過度套用]
+- **來源**：[連到 history/ 條目、episode 或 PR/commit]
+
+## 延伸閱讀
 
 <!--
-  Example:
-
-  ### Verify before reimplementing
-
-  - **Theory said**: The core module only handles evaluation, so we need
-    to build a type checker from scratch.
-  - **Actually happened**: After two days of building, discovered the core
-    module already included full type checking — it just wasn't documented.
-  - **Resolved by**: Deleted the duplicate implementation and documented
-    the existing one.
-  - **Lesson**: Always search existing code before building. The answer
-    may already be there, undocumented.
-  - **Source**: history/010-duplicate-checker.md
+  這張表是 /knowie-next 與 /knowie-judge 的閱讀路由。
+  核心檔案只保留提煉後的教訓，完整因果軌跡放在 history/。
+  觸發主題關鍵字時，技能必須先閱讀相符的子檔案。
 -->
 
-## Key Extensions
-
-<!--
-  This table is the "reading router" for /knowie-next and /knowie-judge.
-  Core files hold only distilled lessons; the full causal trail lives in the
-  history/ subdirectory. When a topic's keywords are triggered, the skill
-  MUST read the matching sub-file before acting.
-  Leave it empty at first; add a row whenever you move detail into a subdirectory.
--->
-
-| Trigger keywords | MUST read |
+| 觸發關鍵字 | 必須閱讀 |
 |---|---|
-| [keyword / topic] | `history/[filename].md` |
+| [關鍵字／主題] | history/[filename].md |

@@ -1,70 +1,45 @@
-# Principles
+# 原則
 
-<!--
-  This file captures the core beliefs and rules that guide your project.
-  Start with a root axiom — the single non-negotiable truth — then derive
-  specific principles from it.
+## 根公理
 
-  Principles should rarely change. If you find yourself editing this file
-  often, the entries might be decisions (which belong in concepts/) rather
-  than principles.
--->
+教學敘事、視覺脈絡與錄製證據，必須作為一個本機專案持續可編輯且可復原。
 
-## Root Axiom
+這是根據產品形狀重建出的根公理：專案把簡報、講者、人像、聲音、字幕、剪輯決策與專案歷史放在一起，而不是把最後輸出的影片視為唯一真相。
 
-<!--
-  What is the one fundamental belief behind this project?
-  Example: "User data belongs to the user, not the platform."
-  Example: "Programs are semantic structures — code is just one projection."
+## 衍生原則
 
-  Advanced: find a *root axiom* — one core concept that all other principles
-  project from. E.g. "one concept, many projections" can itself be the axiom;
-  from it you derive —
-    1. Data structures: chosen so the core concept expresses naturally
-    2. API design: expose projections, not internal structure
-    3. When to refactor: when projections grow enough to obscure the concept
-  One axiom, many concrete rules, all traceable back.
--->
+### 1. 優先採用可逆的表示方式
 
-## Derived Principles
+- **推導自：**根公理。
+- **代表什麼：**剪輯應該先改變決策與參照，而不是摧毀來源證據。
+- **如何套用：**保留原始媒體、保存專案版本、讓字幕替換與時間軸變更在可行時都能復原，並把 .eduv 資料夾視為可復原的專案邊界。
+- **來源：**d35f4c41、016a7418；[](episodes/2026-09-12-非破壞性剪輯與eduv專案.md)
 
-<!--
-  Each principle should trace back to the root axiom or another principle.
-  Explain what it means in practice so your team (and your AI) can apply it.
+### 2. 跨介面功能只有形成一條行為鏈才算完成
 
-  Common categories (pick one to start if you're stuck):
-    1. Technical trade-offs (language, framework, dependency choices)
-    2. Design / UX orientation (for whom, what experience)
-    3. Collaboration / process (how the team works)
-    4. Quality bar (what you won't ship below)
--->
+- **推導自：**根公理。
+- **代表什麼：**一個跨越錄製、渲染、平台轉接層、持久化與 UI 的功能，不是只有某一層獨立運作就算完成。
+- **如何套用：**明確定義資料契約，測試相關邊界，並在每個支援的執行環境驗證使用者可見的完整路徑。
+- **來源：**83a1fc7e、dff6e434、027c418f；[](concepts/跨介面功能需要一條行為鏈.md)
 
-### 1. [Principle Name]
+### 3. 先保留測量證據，再解讀它
 
-<!--
-  Derived from: [Root Axiom / another principle]
-  What it means: ...
-  How to apply: ...
--->
+- **推導自：**根公理。
+- **代表什麼：**時間、字詞邊界與來源偏移量都是證據；估算值或編輯值不能靜默地冒充測量值。
+- **如何套用：**可用時保留原始時間資訊，標示插值與手動修改，並在把轉錄資料轉成可讀字幕時使用單一時鐘。
+- **來源：**016a7418；[](history/001-從混用段落時鐘到共用字詞時鐘.md)
 
-### 2. [Principle Name]
+### 4. 編輯器必須在工作現場呈現常用操作
 
-<!--
-  Derived from: ...
-  What it means: ...
-  How to apply: ...
--->
+- **推導自：**根公理。
+- **代表什麼：**如果使用者在預覽結果時找不到操作位置，再強大的功能也不好用。
+- **如何套用：**把常用的剪輯、字幕與素材操作放在選取物件或時間軸附近；大量列表則必須可搜尋且容易導覽。
+- **來源：**5cc14cec；[](episodes/2026-09-12-編輯器與字幕驗證工具.md)
 
-## Key Extensions
+## 延伸閱讀
 
-<!--
-  This table is the "reading router" for /knowie-next and /knowie-judge.
-  Core files hold only the concepts; detail lives by concept in concepts/,
-  with the causal trail in history/. When a topic's keywords are triggered,
-  the skill MUST read the matching sub-file before acting.
-  Leave it empty at first; add a row whenever you move detail into a subdirectory.
--->
-
-| Trigger keywords | MUST read |
+| 觸發關鍵字 | 必須閱讀 |
 |---|---|
-| [keyword / topic] | `concepts/[filename].md` |
+| 錄製、講者、標記、背景、去背 | [](concepts/跨介面功能需要一條行為鏈.md) |
+| 時間軸、專案、.eduv、復原 | [](episodes/2026-09-12-非破壞性剪輯與eduv專案.md) |
+| 字幕、時間、Whisper、重播、鍵盤焦點 | [](history/001-從混用段落時鐘到共用字詞時鐘.md) |

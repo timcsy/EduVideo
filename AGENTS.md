@@ -1,14 +1,14 @@
-<!-- Knowie: Project Knowledge -->
-## Project Knowledge
+<!-- Knowie：專案知識 -->
+## 專案知識
 
-This project maintains structured knowledge in `knowledge/`:
+本專案在 knowledge/ 維護結構化知識：
 
-- **Principles** (`knowledge/principles.md`): Core axioms and derived development principles — the project's non-negotiable rules.
-- **Vision** (`knowledge/vision.md`): Goals, current state, architecture decisions, and roadmap.
-- **Experience** (`knowledge/experience.md`): Distilled lessons from past development — patterns, pitfalls, and takeaways.
+- **原則**（knowledge/principles.md）：核心公理與衍生開發原則——專案不可違反的規則。
+- **願景**（knowledge/vision.md）：目標、目前狀態、架構決策與開發路線圖。
+- **經驗**（knowledge/experience.md）：從過往開發提煉的教訓、模式、陷阱與要點。
 
-Read these files at the start of any task to understand the project's *why* and constraints.
-Additional context may be found in `knowledge/concepts/`, `knowledge/history/`, and `knowledge/draft/`.
+每次開始任務前，先閱讀上述文件，以了解專案的「為什麼」與限制。
+更多脈絡可見於 knowledge/concepts/、knowledge/history/ 與 knowledge/draft/。
 
-Learned procedures live in `knowledge/skills/` (agentskills.io SKILL.md format). If your tool auto-loads skills, they may be projected into your skill directory; otherwise read the relevant `SKILL.md` there and follow it.
+已學到的程序放在 knowledge/skills/（agentskills.io 的 SKILL.md 格式）。如果工具會自動載入技能，可以直接使用投影到技能目錄中的版本；否則請閱讀其中相關的 SKILL.md 並遵循指示。
 <!-- /Knowie -->

@@ -1,87 +1,84 @@
-# Experience
+# 經驗
 
-<!--
-  This file captures distilled lessons from development — not a changelog,
-  but patterns that should influence future decisions.
+## 教訓
 
-  Each lesson records the gap between theory and reality.
-  Keep entries short and actionable. The full causal trail behind a lesson
-  (how it evolved, what was considered) belongs in knowledge/history/.
--->
+### 把跨介面能力當成一條行為鏈來建立
 
-## Lessons
+- **它如何發生：**辨識與講者合成各自都碰到了 UI、資料、渲染、平台／執行環境轉接層、素材與測試。
+- **實際發生：**專案以協調的功能切片加入這些層，但現有歷史比起原始設計理由，更清楚地記錄了檔案與測試。
+- **如何解決：**在架構中保持跨層功能邊界可見，並在支援的路徑周圍加入行為測試。
+- **教訓：**跨越執行環境與渲染邊界的功能，只有在資料契約、使用者路徑與驗證路徑一起移動時才算完成。
+- **不適用於：**嚴格局部且不影響持久化狀態、媒體時間或其他執行環境的變更。
+- **來源：**83a1fc7e、dff6e434、027c418f；[](concepts/跨介面功能需要一條行為鏈.md)
 
-<!--
-  Add a new section for each significant lesson.
+### 在編輯時間軸前先保留來源
 
-  Always: Actually happened · Lesson · Source.
+- **它如何發生：**時間軸里程碑把非破壞性剪輯、歷史記錄、專案封裝、素材預覽與輸出作為一個連結的單位加入。
+- **實際發生：**專案模型把來源區間與剪輯決策分開，並為分割、修剪、刪除、歷史、封裝與輸出行為加入測試。
+- **如何解決：**把 .eduv 資料夾與版本歷史視為剪輯的一部分，而不是事後才考慮的輸出問題。
+- **教訓：**只有在同時設計來源參照、決策與復原／持久化邊界時，編輯器才真正可復原。
+- **不適用於：**不預期日後修正的一次性、可丟棄轉換。
+- **來源：**d35f4c41；[](episodes/2026-09-12-非破壞性剪輯與eduv專案.md)
 
-  Open with one of two, whichever fits:
-    - "Theory said"  — there was a gap between what you expected and what happened
-    - "How it hit"   — a procedural lesson with no gap ("I did this, and it saved
-                       me"). Forcing "Theory said" here invents a fake expectation,
-                       which is worse than an uneven format.
+### 測量出的時間戳不能和段落估算互換
 
-  Optional, and usually worth the space:
-    - "Doesn't apply when" — the boundary. A lesson with no boundary gets
-      over-applied, and you end up rewriting it once per context instead of
-      sharpening it once.
-    - "Related" — sideways links to sibling lessons. Which family a lesson belongs
-      to is often more useful than the lesson.
+- **它如何發生：**使用者觀察到字幕重疊與獨立出現的句尾語助詞，暴露出字詞時間與段落估算時間被混用了。
+- **實際發生：**部分 Whisper 字詞是被切開的 UTF-8 位元組片段；個別解碼會破壞精確比對，而舊有備援則跨整段文字估算時間。
+- **如何解決：**重新組合原始字詞位元組、保留零長度字詞，並從同一個共用來源時鐘以局部插值推導所有可讀字幕邊界。
+- **教訓：**先保留最有力的時間證據，所有備援都要明確標示，不能靜默替換成另一個時鐘。
+- **不適用於：**來源辨識器完全沒有字詞／token 時間資訊時；此時仍然需要估算，但必須標示為估算。
+- **來源：**016a7418；[](history/001-從混用段落時鐘到共用字詞時鐘.md)
 
-  Source is the leg that goes missing first, especially once you start adapting
-  this format. Drop it and the conclusion survives while the occasion that
-  produced it doesn't — you can no longer rebuild the thinking behind it.
+### 鍵盤行為是編輯器狀態的一部分，不是事後加上的全域功能
 
-  Write the lesson as a *criterion*, not a *practice*. A practice ("split the
-  binding layer from rendering and it becomes testable") expires with the stack;
-  a criterion ("a measurer that changes what it measures isn't measuring it")
-  travels. A lesson is finished when it changes how some criterion gets written —
-  not when it has been written down.
+- **它如何發生：**時間軸移動後，因為焦點仍留在字幕搜尋控制項，按空白鍵無法重播；時間軸範圍控制也需要明確處理。
+- **實際發生：**時間軸的指標互動沒有把焦點交還播放頭，而通用的輸入欄位防護又擋住了原本想要的快捷鍵。
+- **如何解決：**在時間軸按下指標時聚焦播放頭，允許時間軸控制項接收空白鍵，並忽略重複的 keydown 切換。
+- **教訓：**每個編輯器快捷鍵都需要明確的焦點政策，以及媒體播放結束狀態的測試。
+- **不適用於：**文字欄位刻意擁有該按鍵，且使用者正在編輯文字時。
+- **來源：**016a7418；[](episodes/2026-09-12-重播與字幕時間修復.md)
 
-  Lessons others commonly record (see if any hit something you've been through):
-    1. Locate bugs with prints before reasoning about them
-    2. On big refactors, let the compiler / type-checker be your to-do list
-    3. Performance usually comes from the data model, not micro-optimization
-    4. "Wrong → understand → fix" beats "think it through perfectly first"
-    5. Don't skip TDD — "I'll add tests later" usually means 3× the debugging
--->
+### 功能完成要以整條工作流與可發現性判定
 
-### [Lesson Title]
+- **它如何發生：**使用者從錄製、合成預覽、時間軸、字幕列表到素材管理反覆回報「功能雖然存在，但不知道在哪裡操作」或「操作後無法繼續播放」。
+- **實際發生：**單一功能測試可以通過，但實際工作流仍會被側欄層級、列表導覽、素材按鈕分散、播放焦點與直接調整方式打斷。
+- **如何解決：**把常用操作放到選取物件與時間軸附近，為字幕提供搜尋／分頁／時間跳轉與跟隨播放，為素材提供管理與預覽，並以實際瀏覽器流程驗證。
+- **教訓：**如果使用者不能在觀看結果的當下找到操作位置、持續播放並確認變更，這項功能就還沒有完成。
+- **不適用於：**不需要互動探索的純匯出或一次性批次處理。
+- **來源：**本次使用者回饋；[](episodes/2026-09-12-使用者需求與可用性回饋.md)、[](episodes/2026-09-12-編輯器與字幕驗證工具.md)
 
-- **Theory said**: [What you expected based on design, principles, or assumptions]
-- **Actually happened**: [What really occurred — be specific]
-- **Resolved by**: [How the gap was bridged — the fix, workaround, or insight]
-- **Lesson**: [One-sentence reusable criterion for next time]
-- **Doesn't apply when**: [The boundary — where this stops being true. Optional, but it's what stops the lesson being over-applied]
-- **Source**: [Link to history/ entry, episode, or PR/commit]
+### 分離來源錄製，並在預覽時合成
 
-<!--
-  Example:
+- **它如何發生：**即時 AI 去背可能造成錄製卡頓，但使用者仍希望錄製時看到簡報與自己的人像。
+- **實際發生：**錄製模組分別取得 screen 與 camera，合成模組再把兩條媒體放入預覽／輸出流程；人像遮罩與背景也在合成階段處理。
+- **如何解決：**保留獨立的原始媒體與音訊，讓預覽與輸出依照目前版面合成，而不是把昂貴的去背負擔綁在原始錄製上。
+- **教訓：**即時錄製的效能邊界與最終畫面效果應由可復原的來源軌道及可重算的合成狀態連接，而不是互相綁死。
+- **不適用於：**必須直接交付單一硬體編碼串流、且不需要後續剪輯的場景。
+- **來源：**本次使用者回饋；[](episodes/2026-09-12-使用者需求與可用性回饋.md)、[](episodes/2026-09-12-錄製工作區.md)
 
-  ### Verify before reimplementing
+### 字幕斷句要以語意與語音證據決定
 
-  - **Theory said**: The core module only handles evaluation, so we need
-    to build a type checker from scratch.
-  - **Actually happened**: After two days of building, discovered the core
-    module already included full type checking — it just wasn't documented.
-  - **Resolved by**: Deleted the duplicate implementation and documented
-    the existing one.
-  - **Lesson**: Always search existing code before building. The answer
-    may already be there, undocumented.
-  - **Source**: history/010-duplicate-checker.md
--->
+- **它如何發生：**使用者指出字幕不能用固定字數或固定秒數硬切，截圖也顯示整段無斷句與不自然的時間分配。
+- **實際發生：**字幕處理改以語句邊界、中文語助詞、轉折連接詞、重新出現的主語與語音停頓尋找候選邊界；有字詞時間時使用共同來源時鐘，沒有時才標示估算。
+- **如何解決：**保留完整語意片段，讓語意分句優先於長度上限；對跨 UTF-8 token、零長度字詞與句尾語助詞加入回歸測試。
+- **教訓：**字幕可讀性應由語意完整性與語音證據共同決定，長度與時長只能是提示或驗證訊號，不能是任意切刀。
+- **不適用於：**來源只有無時間的整段文字，且沒有任何語言或停頓訊號可供推斷時；這時只能估算並明確標示限制。
+- **來源：**本次使用者回饋；[](episodes/2026-09-12-使用者需求與可用性回饋.md)、[](history/001-從混用段落時鐘到共用字詞時鐘.md)
 
-## Key Extensions
+### TDD 要固定使用者可感知的行為，而不只是實作細節
 
-<!--
-  This table is the "reading router" for /knowie-next and /knowie-judge.
-  Core files hold only distilled lessons; the full causal trail lives in the
-  history/ subdirectory. When a topic's keywords are triggered, the skill
-  MUST read the matching sub-file before acting.
-  Leave it empty at first; add a row whenever you move detail into a subdirectory.
--->
+- **它如何發生：**前面的重構要求使用 TDD，功能又橫跨錄製、合成、剪輯、字幕、素材與桌面執行環境。
+- **實際發生：**各功能切片旁都留下單元、整合或瀏覽器流程測試；最後的字幕斷句、重播、素材預覽與列表導覽也有回歸驗證。
+- **如何解決：**先把可觀察的資料、畫面與操作結果寫成測試，再讓實作通過這些測試，並用實際瀏覽器流程補足單元測試看不到的焦點與導覽問題。
+- **教訓：**TDD 的測試對象應是使用者能觀察到的行為邊界，跨層功能尤其要有至少一條能從操作走到持久化或輸出的驗證路徑。
+- **不適用於：**純重排、不改變行為或不改變持久化資料的機械式程式碼整理。
+- **來源：**本次開發回饋；[](episodes/2026-09-12-使用者需求與可用性回饋.md)、[](episodes/2026-09-12-編輯器與字幕驗證工具.md)
 
-| Trigger keywords | MUST read |
+## 延伸閱讀
+
+| 觸發關鍵字 | 必須閱讀 |
 |---|---|
-| [keyword / topic] | `history/[filename].md` |
+| 功能邊界、UI、執行環境、渲染、測試 | [](concepts/跨介面功能需要一條行為鏈.md) |
+| 非破壞性剪輯、來源媒體、.eduv | [](episodes/2026-09-12-非破壞性剪輯與eduv專案.md) |
+| 字幕時間、Whisper、UTF-8、重播 | [](history/001-從混用段落時鐘到共用字詞時鐘.md) |
+| 使用者需求、可用性、素材、字幕列表 | [](episodes/2026-09-12-使用者需求與可用性回饋.md) |

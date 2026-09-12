@@ -1,21 +1,23 @@
-# episodes — episodic memory (recall units)
+# 事件 — 情節記憶（回想單位）
 
-Holds the full lived experiences worth recalling — the complete scene of one act of cognition. It's the story behind an experience lesson or a history decision; you can return to "what actually happened" later.
+這裡保留值得日後回想的完整經驗，也就是一個認知行動的完整場景。它是經驗教訓或歷史決策背後的故事，之後可以回來確認「當時實際發生了什麼」。
 
-## What goes here
-- When something is **fully done / settled** AND **significant, likely to revisit later** → save an episode.
-- Most things are **not** kept — distil into an experience lesson / history decision and let the scene fade (heavy decay is normal).
-- Still has open parts → stays in `draft/` (in-flight rationale, not yet a finished scene).
+## 哪些內容放在這裡
 
-## Structure (the inverse of concepts)
-| | concepts (semantic) | episodes (episodic) |
+- 某件事**已經完成或定案**，而且重要、日後很可能需要回看時，保存為事件。
+- 大多數事情不必保留：提煉成經驗教訓或歷史決策後，就讓場景淡出。強烈衰退是正常的。
+- 還有未完成部分時，留在 draft/。那是進行中的理由，不是完成的場景。
+
+## 結構（與概念相反）
+
+| | 概念（語意） | 事件（情節） |
 |---|---|---|
-| Axis | by concept | **by time** (autobiographical) |
-| Reduce | converge upward (merge) | **never merge** (each stands alone, append-only) |
-| Shrink | distillation | **decay** (drop the non-recall-worthy, don't merge) |
+| 軸線 | 按概念 | **按時間**（自傳式） |
+| 縮減方式 | 向上收斂（合併） | **永不合併**（每件事獨立、只追加） |
+| 變小方式 | 提煉 | **衰退**（刪去不值得回想的部分，不要合併） |
 
-- **Filename**: `YYYY-MM-DD-what-it-was.md` (date + one line, `-` instead of spaces — a space makes `%20`-encoded and literal links disagree, so half the pointers break silently). For one reflowed on redeem-and-retire, use the roadmap item's **completion date** (stamped in vision).
-- **File body = a recall unit**: why / how (which options were weighed) / which concepts / outcome, with `[](path)` links back to the experience lesson or history decision it backs.
-- **Link the "how" to external artifacts**: the *how* often has code/SDD-world artifacts — a **spec (e.g. Spec Kit), PR, commit**. Link them with `[](path)` — **point out, don't copy** (they're what/how, owned by code/SDD; knowie keeps the why + a pointer). For a spec that gets regenerated, pin a **commit/SHA** (link the version as it was), else it's changed by the time you look back.
-- **Link direction**: one experience/history ← many episodes (the lesson/decision links down to its scenes).
-- **No heavy index, no premature subfolders** (both fight decay; split by year only once one folder overflows).
+- **檔名**：YYYY-MM-DD-事件內容.md（日期加一行描述，空格改用連字號）。若是重新整理後兌現並退休的項目，使用 vision 中路線圖項目的**完成日期**。
+- **檔案內容 = 一個回想單位**：記錄為什麼、怎麼做（衡量過哪些選項）、涉及哪些概念與最後結果，並以 Markdown 連結連回它支持的經驗教訓或歷史決策。
+- **把「怎麼做」連到外部產物**：做法通常屬於程式或 SDD 世界，例如規格、PR、commit。用 Markdown 連結指出位置，不要複製內容；what/how 由程式與 SDD 保存，knowie 只保留 why 與指標。若規格會重新產生，請固定連到當時版本的 commit/SHA，否則日後內容可能已改變。
+- **連結方向**：一個經驗或歷史決策 ← 多個事件；教訓或決策向下連到它的場景。
+- **不要建立厚重索引或過早分資料夾**：這兩者都會妨礙衰退；直到單一資料夾真的塞滿前，不要按年份拆分。

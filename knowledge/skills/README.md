@@ -1,17 +1,20 @@
-# skills — procedural memory (learned capabilities / the cerebellum)
+# 技能 — 程序記憶（已學會的能力）
 
-Holds the **domain skills this project has learned** — repeated work distilled into executable capability (like the cerebellum: learned through repetition, then automatic).
+這裡放本專案學會的領域技能：把反覆完成的工作提煉成可執行的能力，就像小腦把重複練習轉成自動化。
 
-## What goes here
-- A domain task done **repeatedly** (scrape-and-build a dataset, batch-translate…) → capture records a "candidate skill" in `draft/` → on maturity, **human-confirmed** → consolidated into a skill here.
-- A skill **is** knowledge — its use-intent is just "execute". It's high-stakes (it acts; it can fail silently) → consolidating it needs **stricter** human confirmation than committing knowledge.
+## 哪些內容放在這裡
 
-## Format & install
-- Each skill = a folder + `SKILL.md` ([agentskills.io](https://agentskills.io) open standard).
-- This is the **source of truth**; on consolidation the **AI projects each skill — per-skill symlink (copy-fallback on Windows) — into the present tools' skill dirs** (`.claude/skills`, `.agents/skills`, …) so it's **usable now**. It's reversible, so the AI does it directly (no CLI). `judge` re-ensures these projections (fresh clone / new tool). One source, no drift.
+- 某個領域任務反覆完成（例如抓取資料並建立資料集、批次翻譯）時，capture 會先在 draft/ 建立候選技能；成熟後由人確認，再整合成這裡的技能。
+- 技能本身就是知識，它的使用意圖只有「執行」。因為它會採取行動且可能靜默失敗，整合技能需要比一般知識更嚴格的人為確認。
 
-## vs knowie's own skills
-- Here: domain skills **this project** learned.
-- knowie's built-in init/capture/next/judge/update are **protocol meta-skills** — they don't live here (installed from knowie).
+## 格式與安裝
 
-(Just here to understand the project? Skip this layer — it's a capability library, not *why*.)
+- 每個技能都是一個資料夾加上 SKILL.md，遵循 [agentskills.io](https://agentskills.io) 開放標準。
+- 這裡是唯一真實來源；整合時，AI 會把每個技能以每技能一個連結的方式投影到目前工具的技能資料夾（.claude/skills、.agents/skills 等），Windows 則在必要時退回複製。這是可逆的，所以 AI 可以直接處理，不需要 CLI。judge 會重新確認這些投影，適用於新 clone 或新增工具。單一來源，不產生漂移。
+
+## 與 knowie 自己的技能有何不同
+
+- 這裡：本專案學會的領域技能。
+- knowie 內建的 init、capture、next、judge、update：它們是協定層的 meta-skill，不放在這裡，而是從 knowie 安裝。
+
+（只是想了解專案時，可以略過這一層；它是能力庫，不是 why。）

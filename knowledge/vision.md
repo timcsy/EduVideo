@@ -1,99 +1,55 @@
-# Vision
+# 願景
 
-<!--
-  This file describes where your project is going. It evolves as your
-  understanding deepens. Update it after each milestone or when priorities
-  shift.
+## 問題陳述
 
-  Not sure where to start? Fill one slot at a time (skipping is fine — mark TBD):
-    1. Ultimate goal — in one sentence, what does success look like?
-    2. Current state — where are you now? (a paragraph is enough)
-    3. Next 2-3 milestones — what does each deliver?
-    4. A checklist per milestone — what specifically must be done?
--->
+教學者需要一邊解說簡報，一邊呈現自己的影像，之後還能在不破壞投影片、講者影片、聲音、標記與字幕關係的情況下修整錄製內容。扁平化的最終影片很難修正；工作中的專案必須持續可理解且可編輯。
 
-## Problem Statement
+## 核心想法
 
-<!--
-  What problem does this project solve? Who has this problem?
-  Why do existing solutions fall short?
--->
+EduVideo 是 local-first 的教學影片工作室：分開錄製簡報與講者媒體，在預覽時把它們一起呈現，再透過可復原的專案資料夾編輯同步後的結果。
 
-## Core Idea
+## 目前狀態
 
-<!--
-  Your solution in one or two sentences.
-  Example: "A single semantic tree that projects into code, blocks, and
-  flowcharts — edit any view, all stay in sync."
--->
+目前的 Studio 0.6.2 實作包含瀏覽器式錄製工作區、投影片標記、講者合成、非破壞性時間軸剪輯、素材管理、.eduv 資料夾專案、可編輯字幕與辨識路徑，以及可選用原生語音模型的 Electron 桌面執行環境。重播與字幕時間修正已有自動化測試涵蓋。
 
-## Current State
+目前歷史沒有確立去背邊緣、轉錄準確度，或 Electron、Tauri 與瀏覽器執行環境長期分工的完成品質門檻；這些仍保留為待定草稿。
 
-<!--
-  Where is the project right now? What works and what doesn't?
-  Be honest — this helps your AI give realistic suggestions.
--->
+## 架構
 
-## Architecture
+UI 與領域邏輯以瀏覽器導向的模組組成。分離的媒體軌道與可編輯專案狀態會在預覽或輸出時合成。桌面封裝透過 Electron IPC 處理本機專案檔案、編碼與語音辨識；瀏覽器語音則有獨立的 WebAssembly／API 路徑。.eduv 內的 media 與 revisions 資料夾保存專案邊界，下載的語音模型則留在專案外部。
 
-<!--
-  Key technical decisions and why they were made.
-  Link to knowledge/concepts/ for detail, organized by concept.
--->
+## 已交付里程碑
 
-## Roadmap
+以下里程碑截至 2026-09-12 都已完成，現在只作為快速通往各事件紀錄的索引：
 
-<!--
-  Milestones in order. Use checkboxes to track completion status.
-  For each milestone:
-  - Name + checkbox ([ ] pending, [x] complete)
-  - What it delivers
-  - Prerequisites (which milestones must be done first)
-  - Success criteria (concrete, verifiable)
+- 錄製工作區 — [](episodes/2026-09-12-錄製工作區.md)
+- 講者合成與投影片標記 — [](episodes/2026-09-12-講者合成與投影片標記.md)
+- 非破壞性剪輯與 .eduv 專案 — [](episodes/2026-09-12-非破壞性剪輯與eduv專案.md)
+- 字幕辨識與編輯 — [](episodes/2026-09-12-字幕辨識與編輯.md)
+- 桌面執行環境與可選語音模型 — [](episodes/2026-09-12-桌面執行環境與可選語音模型.md)
+- 編輯器與字幕驗證工具 — [](episodes/2026-09-12-編輯器與字幕驗證工具.md)
+- 重播與字幕時間修復 — [](episodes/2026-09-12-重播與字幕時間修復.md)
 
-  When a milestone is done, check it off AND stamp a **completion date**:
-  `- [x] Complete (YYYY-MM-DD)`. Day-grain is enough. On redeem-and-retire,
-  a done item reflows into an episode whose filename is dated — that date
-  comes from here; without it you lose "when was this finished".
-  /knowie-judge will verify that checked items match the actual project state.
--->
+## 開發路線圖
 
-### Phase 1: [Name]
+### Phase 7：建立品質界線
 
-- [ ] Complete
+- [ ] 待處理
 
-<!--
-  Delivers: ...
-  Prerequisites: none
--->
+在加入另一個廣泛的跨介面功能前，先解決執行環境、講者去背與字幕品質的未決問題。
 
-**Success criteria:**
-- [ ] [Concrete criterion 1]
-- [ ] [Concrete criterion 2]
+**成功判準：**
 
-### Phase 2: [Name]
+- [ ] 記錄支援的執行環境矩陣，並選定長期桌面方向。
+- [ ] 定義可量測的講者去背品質案例，以及轉錄修正／驗證流程。
 
-- [ ] Complete
+## 延伸閱讀
 
-<!--
-  Delivers: ...
-  Prerequisites: Phase 1
--->
-
-**Success criteria:**
-- [ ] [Concrete criterion 1]
-- [ ] [Concrete criterion 2]
-
-## Key Extensions
-
-<!--
-  This table is the "reading router" for /knowie-next and /knowie-judge.
-  Core files hold only the vision skeleton; detail lives by concept in concepts/.
-  When a topic's keywords are triggered, the
-  skill MUST read the matching sub-file before acting.
-  Leave it empty at first; add a row whenever you move detail into a subdirectory.
--->
-
-| Trigger keywords | MUST read |
+| 觸發關鍵字 | 必須閱讀 |
 |---|---|
-| [keyword / topic] | `concepts/[filename].md` |
+| 錄製器、簡報、講者、編輯器、.eduv | [](concepts/跨介面功能需要一條行為鏈.md) |
+| 執行環境、Electron、Tauri、瀏覽器、模型 | [](draft/2026-09-12-桌面執行環境界線.md) |
+| 去背、背景、分割 | [](draft/2026-09-12-講者去背品質.md) |
+| 字幕、轉錄、時間 | [](draft/2026-09-12-字幕品質界線.md) |
+| 使用者需求、可用性、錄製工作流、素材管理 | [](episodes/2026-09-12-使用者需求與可用性回饋.md) |
+| Knowie、知識庫、繁體中文、技能投影 | [](history/002-從英文Knowie骨架到繁體中文知識庫.md) |

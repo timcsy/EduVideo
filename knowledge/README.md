@@ -1,30 +1,35 @@
-# Project Knowledge (knowledge/)
+# 專案知識（knowledge/）
 
-This folder records the **why** behind this project — its principles, direction, and lessons — the things code itself can't hold. It lets an AI (and new teammates) understand the project's intent and constraints before touching anything.
+這個資料夾記錄程式碼本身無法承載的專案「為什麼」：原則、方向與經驗。它讓 AI 與新加入的協作者在修改程式前，先理解專案意圖與限制。
 
-> Maintained by [knowie](https://github.com/timcsy/knowie): a tool for AI to maintain project knowledge in a structured way. Not familiar with knowie? You can still read everything below.
+> 由 [knowie](https://github.com/timcsy/knowie) 維護：協助 AI 以結構化方式維護專案知識。即使不熟悉 knowie，也可以直接閱讀以下內容。
 
-## Start with these three files
-- **`principles.md`** — the project's non-negotiable beliefs and rules (split into *root principles* and the *derived principles* that follow from them).
-- **`vision.md`** — what problem it solves, where it is now, and the roadmap.
-- **`experience.md`** — lessons distilled from development (pitfalls hit, patterns learned).
+## 先閱讀這三個檔案
 
-## For detail, go into the subdirectories
-- **`concepts/`** — recurring core concepts; the three files keep only pointers, the detail lives here.
-- **`episodes/`** — episodic memory: recall-worthy full scenes (the story behind a lesson or decision).
-- **`history/`** — the causal trail: why things became what they are (decision transitions, rejected options).
-- **`draft/`** — short-term memory: undecided ideas still forming.
+- **principles.md**：專案不可妥協的信念與規則，分為根原則及由根原則推導出的衍生原則。
+- **vision.md**：專案要解決的問題、目前狀態與開發路線圖。
+- **experience.md**：從開發過程提煉的經驗，包括遇到的陷阱與學到的模式。
 
-## How to read
-Start with the three core files; each ends with a "Key Extensions" table telling you which sub-file to open for a given topic.
+## 需要細節時，再進入子資料夾
 
-## Skills that maintain it
-If you use an AI tool that supports knowie (e.g. Claude Code), these commands help maintain this knowledge base:
-- `/knowie-init` — create the knowledge base from scratch
-- `/knowie-capture` — dispatch a discussion / idea into the right place
-- `/knowie-consolidate` — human-initiated: consolidate a ripe draft out (capture's symmetric OUT)
-- `/knowie-next` — plan the next step from the knowledge base
-- `/knowie-judge` — check consistency, align with code, tidy
-- `/knowie-migrate` — migrate the base when the structure version moves on
+- **concepts/**：反覆出現的核心概念。三個核心檔案只保留指標，細節放在這裡。
+- **episodes/**：值得日後回想的完整事件場景，也就是某個經驗或決策背後的故事。
+- **history/**：因果軌跡，記錄決策如何轉變以及哪些選項被拒絕。
+- **draft/**：仍在形成、尚未定案的短期記憶與想法。
 
-(Just here to understand the project? Feel free to ignore this section.)
+## 閱讀方式
+
+先閱讀三個核心檔案；每個檔案結尾都有「延伸閱讀」表格，會告訴你遇到特定主題時應開啟哪個子檔案。
+
+## 維護它的技能
+
+如果使用支援 knowie 的 AI 工具（例如 Claude Code），以下指令可以協助維護知識庫：
+
+- /knowie-init：從頭建立知識庫
+- /knowie-capture：把討論或想法分派到適當位置
+- /knowie-consolidate：由人主動把成熟草稿整理出去
+- /knowie-next：根據知識庫規劃下一步
+- /knowie-judge：檢查一致性、與程式對齊並整理
+- /knowie-migrate：結構版本變更時遷移知識庫
+
+（只是想了解專案時，可以忽略這一節。）

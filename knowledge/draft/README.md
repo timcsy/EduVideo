@@ -1,16 +1,18 @@
-# draft — short-term memory
+# 草稿 — 短期記憶
 
-Things offloaded from discussion that aren't worth committing yet. **One topic per file**: `YYYY-MM-DD-topic.md` (`-` instead of spaces — a space breaks half the links to the file), plus a line of "how it came up".
+這裡放從討論中暫存、但尚未值得提交為長期知識的內容。每個檔案只放一個主題，檔名格式為 YYYY-MM-DD-topic.md（空格改用連字號），並附上一行說明它如何產生。
 
-Both halves of the name earn their place: the **date** is the time handle ("that batch from last month") and marks the file as a snapshot of one discussion; the **topic** is the semantic handle ("the one about X"). With both in the filename you can find it without opening anything.
+檔名的兩部分都有用途：**日期**是時間索引，也標示這是一次討論的快照；**主題**是語意索引，讓人不用開檔就能找到與某件事有關的內容。
 
-## How it works (like short-term memory)
-- **One topic block per file**, carrying its context — not scattered sticky notes. The unit of memory is an episode, not an atom.
-- **Talked about it again? Open a new file (new date).** Don't overwrite the old one: several snapshots of one topic piling up *is* the signal that it's ready to consolidate.
-- **Decays by default.** Untouched topics fade — forgetting is the feature, not a failure. Most should fade; only a few consolidate.
-- **Rescued by use.** A topic you keep returning to has proven it should consolidate → distil it into the three files / concepts, then delete it here.
-- **Recency from git** (longest-untouched = candidate to resolve), not hand-maintained.
-- **Three exits, all leave draft**: consolidate · let go (delete) · reject (tombstone in `history/`).
+## 它如何運作（像短期記憶）
 
-## How judge sweeps it
-Use git recency to surface the longest-untouched topics and rule on each: rescue (consolidate) or let go (fade). The test is **recency + frequency, not age** — an old topic you keep coming back to is alive; a recent one you never revisited isn't.
+- 每個檔案是一個帶有脈絡的主題區塊，不是散落的便利貼。記憶單位是一段事件，而不是單一原子事實。
+- 再次討論同一件事時，開新檔案並使用新日期，不要覆寫舊檔。相同主題累積多個快照，本身就是它準備整合的訊號。
+- 預設會衰退。沒有被碰過的主題會逐漸淡出；遺忘是功能，不是失敗。大多數內容本來就應該淡出，只有少數會被整合。
+- 被使用就會被救回。反覆回來查看的主題證明它應該被整合：提煉到三個核心檔案或 concepts/，然後從這裡刪除。
+- 以 Git 的新鮮度判斷，而不是手動維護。最久未碰的內容是優先處理候選。
+- 三種出口都會離開草稿：整合、放下（刪除）、拒絕（在 history/ 留下墓碑）。
+
+## judge 如何整理它
+
+使用 Git 的新鮮度找出最久未碰的主題，逐一判斷要救回（整合）還是放下（淡出）。判準是「新鮮度加頻率」，不是單看年齡：很久以前但持續回訪的主題仍然活著，最近建立卻從未再看的主題則不一定。

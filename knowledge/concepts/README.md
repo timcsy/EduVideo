@@ -1,17 +1,20 @@
-# Concepts
+# 概念
 
-Parent-concepts distilled from the knowledge base. One recurring idea per file, with how it projects onto the three perspectives. The core files keep only pointers here (via their Key Extensions tables); the detail lives here.
+這裡放從知識庫提煉出的父概念。每個檔案只描述一個反覆出現的想法，並說明它如何投射到三種觀點。核心檔案只透過「延伸閱讀」表格指向這裡，細節則保留在概念檔中。
 
-## When something earns a file here
-- It projects onto **all three** perspectives. Strong in only one → it's still a lesson or a principle; keep it in `draft/`.
-- As a parent it has **pruning power**: it explains or predicts its sub-cases. Vague enough to hold anything = a bad abstraction.
+## 什麼時候值得建立檔案
 
-## Name it as a claim, not a noun
-`copying-a-truth-schedules-its-expiry.md` beats `duplication.md`; `seen-doesnt-count-only-noticed-does.md` beats `observability.md`.
+- 它必須能投射到**原則、經驗與情境**三種觀點。若只在其中一種觀點成立，就仍是經驗或原則；若尚未成熟，先放在 draft/。
+- 作為父概念時，它必須有**刪減與篩選能力**：能解釋或預測子案例。什麼都能裝進去的模糊概念，就是不好的抽象。
 
-A noun tells you where to **file** something. A claim lets you **judge** it — hold a paragraph up against the name and you can tell whether it belongs. That's the pruning-power test above, applied at naming time instead of six months later when the concept turns out to hold nothing.
+## 用主張命名，而不是用名詞
 
-Filenames follow the base's language, and use `-` instead of spaces (a space makes `%20`-encoded and literal links disagree, so half the pointers to the file break silently).
+「複製真相會安排它的到期日」比「複製」好；「被看見不等於被注意」比「可觀測性」好。
 
-## Keep it converging
-Prefer **fewer** parent-concepts over many scattered ones. When concepts multiply, look *up* for the parent they're all projections of — don't dig more folders.
+名詞只能告訴你要把東西**歸檔**在哪裡；主張則能讓你**判斷**它是否屬於這裡。把一段文字放在名稱旁檢查，就能知道它是否符合概念，這正是命名時就做刪減測試，而不是半年後才發現概念什麼都能容納。
+
+檔名遵循知識庫的語言，空格改用連字號。空格會讓百分比編碼的連結與一般文字連結不一致，使部分指標靜默失效。
+
+## 讓知識逐漸收斂
+
+父概念寧可少一點，也不要散落成許多個。概念開始增加時，先往上尋找它們共同投射出的父概念，不要繼續挖更多資料夾。

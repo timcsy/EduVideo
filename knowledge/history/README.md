@@ -1,38 +1,42 @@
-# History
+# 歷史
 
-This directory holds the **causal trail** — why the project became what it is. Not a flat event log, but **decision transitions** and **rejected options**. It's the raw material distilled into experience.md.
+這個資料夾保存專案如何變成現在樣子的**因果軌跡**。它不是平面的事件紀錄，而是決策轉變與被拒絕選項的原始材料，之後會提煉進 experience.md。
 
-## When to add a file here
-- A decision **supersedes** an earlier one — record the old, the new, and **why it changed**; mark the old superseded and link to the new.
-- An option was **rejected** — leave a **tombstone**: what was considered, and **why not** (the richest why).
-- A debugging session or milestone **revealed a pivot** — a prior decision or assumption changed. (The pivot is the entry; the fact that something shipped is not.)
+## 什麼時候在這裡新增檔案
 
-## Not here — a completion is not a transition
-"Shipped feature X / tests green / increment done" is **not** a transition, even under a "Transition" heading. That belongs in the commit / CHANGELOG (the *how*-leg) and, if the exploration is recall-worthy, an `episodes/` scene; its lesson distils into `experience.md`. Only add a file here if a decision actually **changed**.
-**Test:** delete the delivery/test lines from the entry — if an "old → new, and why it changed" remains, it's history; if only "we finished it" remains, it isn't. (One entry per shipped increment is the smell.)
+- 某個決策取代了較早的決策：記錄舊決策、新決策與**改變的原因**，標示舊決策已被取代，並連到新決策。
+- 某個選項被拒絕：留下**墓碑**，記錄曾考慮什麼以及**為什麼不採用**。這通常是最有價值的 why。
+- 除錯過程或里程碑揭露了轉向：原本的決策或假設發生變化。這個轉向本身才是條目；某件事已經上線不是。
 
-## Suggested format
+## 不要放在這裡——完成不是轉變
 
-```markdown
-# [NNN]: from [old] to [new]
-> Date: YYYY-MM-DD
+「功能 X 已交付／測試通過／增量完成」**不是**轉變，即使放在「轉變」標題下也一樣。這些內容屬於 commit 或 CHANGELOG 的 how；如果探索過程值得回想，則放一個 episodes/ 場景，而它的教訓提煉到 experience.md。只有決策真的改變時，才在這裡新增檔案。
 
-## Transition
-- Old: ...
-- New: ...
+**測試方式**：刪掉條目中交付與測試的句子；如果仍然留下「舊 → 新，以及改變原因」，它就是歷史；如果只剩「我們完成了它」，就不是。（每個已交付增量各放一條，通常代表分類錯了。）
 
-## Why it changed
-...
+## 建議格式
 
-## Status
-✅ adopted  /  ⚰️ rejected (reason)
-```
+    # [NNN]：從 [舊狀態] 到 [新狀態]
+    > 日期：YYYY-MM-DD
 
-## File naming & date
-Numbered prefixes keep causal order: `001-...`, `002-...` (NNN is the key — don't put the date in the filename, that mixes two axes: number + time). Use `-` instead of spaces; a space breaks half the links to the file.
+    ## 轉變
+    - 舊：……
+    - 新：……
 
-**Let the filename read as the diff**: `002-from-managed-paas-to-a-self-hosted-vps` tells you the transition without opening it. If you can't phrase the name as "from X to Y" (or "rejected X"), that's the tell you're looking at a completion, not a transition — see "Not here — a completion is not a transition" above.
-Put the date in the body (`> Date: YYYY-MM-DD`), to the **day**: time is over-precision — the NNN prefix already orders same-day transitions. (A date lets time-based health metrics like "root-principle churn rate" be computed.)
+    ## 為什麼改變
+    ……
 
-## Relationship to core files
-This is the uncompressed causal trail; the lessons in it distil into **experience.md** (four-part format). A recurring trail, once mature, becomes one experience lesson.
+    ## 狀態
+    ✅ 已採用  /  ⚰️ 已拒絕（原因）
+
+## 檔名與日期
+
+編號前綴保持因果順序，例如 001-……、002-……（NNN 是關鍵，不要在檔名放日期；編號與時間是兩條不同軸線）。空格改用連字號，否則部分檔案指標會失效。
+
+讓檔名讀起來像差異：「002-從託管平台到自架伺服器」應該在不用開檔的情況下就能表達轉變。如果無法把名稱說成「從 X 到 Y」或「拒絕 X」，通常表示你看到的是完成紀錄而不是轉變，請回到上面的判準。
+
+日期放在檔案內容中，精確到日即可。NNN 前綴已經能排序同一天的轉變；日期則讓「根原則變動率」這類時間健康指標可以計算。
+
+## 與核心檔案的關係
+
+這裡是不壓縮的因果軌跡；其中成熟的教訓會提煉到 experience.md。反覆出現且成熟的軌跡，最後會成為一條經驗教訓。
