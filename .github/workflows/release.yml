@@ -1,0 +1,91 @@
+name: 建立 Electron Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: 測試並發布 macOS Electron 版本
+    runs-on: macos-14
+
+    steps:
+      - name: 取出原始碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 驗證 tag 與 package 版本
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag_version="$(printf '%s' "$GITHUB_REF_NAME" | sed 's/^v//')"
+          package_version="$(node -p "require('./package.json').version")"
+          if [[ "$tag_version" != "$package_version" ]]; then
+            echo "Tag 版本 $tag_version 與 package.json 版本 $package_version 不一致"
+            exit 1
+          fi
+
+      - name: 安裝相依套件
+        run: npm ci
+
+      - name: 執行測試
+        run: npm test
+
+      - name: 建置 Web 版本
+        run: npm run build:web
+
+      - name: 建置 Electron macOS Apple Silicon DMG
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --mac dmg --arm64 --publish never
+
+      - name: 整理 Release 素材
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(printf '%s' "$GITHUB_REF_NAME" | sed 's/^v//')"
+          mkdir -p release
+
+          (cd dist && zip -qr "../release/EduVideo-Studio-Web-$version.zip" .)
+
+          dmg_path="$(find electron-dist -type f -name '*.dmg' -print -quit)"
+          if [[ -z "$dmg_path" ]]; then
+            echo "找不到 Electron DMG"
+            exit 1
+          fi
+          cp "$dmg_path" "release/EduVideo-Studio-macOS-arm64.dmg"
+
+          (cd release && shasum -a 256 *.dmg *.zip > SHA256SUMS.txt)
+          ls -lh release
+
+      - name: 建立 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: EduVideo Studio ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            ## 下載
+
+            - macOS Apple Silicon：下載 EduVideo-Studio-macOS-arm64.dmg
+            - Web 版：下載 EduVideo-Studio-Web-版本.zip
+            - SHA256SUMS.txt 可用來驗證下載檔案
+
+            目前桌面版以 Electron 為主，要求 macOS 15 或更新版本。語音辨識模型不會預先包進安裝檔，請在程式內依需求下載。
+          files: release/*
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
