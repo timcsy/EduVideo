@@ -1,0 +1,3 @@
+export function renameTake(project,id,name){if(!project.takes.some(t=>t.id===id))throw new Error('找不到素材');const clean=String(name).trim().slice(0,100);if(!clean)throw new Error('素材名稱不能空白');return {...project,takes:project.takes.map(t=>t.id===id?{...t,name:clean}:t)};}
+export function appendTake(project,id){const t=project.takes.find(t=>t.id===id);if(!t)throw new Error('找不到素材');return {...project,segments:[...project.segments,{takeId:id,in:0,out:t.duration,...(t.screenOnly?{layout:{visible:false}}:{})}]};}
+export function removeTake(project,id,removeUsed=false){if(project.segments.some(s=>s.takeId===id)&&!removeUsed)throw new Error('素材仍在時間軸使用');return {...project,takes:project.takes.filter(t=>t.id!==id),segments:project.segments.filter(s=>s.takeId!==id)};}

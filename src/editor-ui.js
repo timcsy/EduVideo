@@ -1,0 +1,40 @@
+import {DEFAULT_LAYOUT} from './layout.js';
+import {BACKGROUND_PRESETS} from './background-presets.js';
+export function mountEditorTools(actions) {
+  const $=id=>document.getElementById(id),inspector=document.querySelector('.edit-inspector');
+  const common=document.createElement('section');common.className='common-edits';common.innerHTML='<h2>常用剪輯</h2><p class="hint">點選時間軸片段 → 移動播放頭 → 分割或裁切。刪除後會自動接合。</p><div id="common-actions"></div>';
+  inspector.prepend(common);
+  for(const id of ['split','delete','undo','redo','move-left','move-right'])$('common-actions').append($(id));
+  const commands={duplicate:'複製片段 ⌘D','trim-head':'起點設為播放頭 I','trim-tail':'終點設為播放頭 O','restore-clip':'還原完整素材'};
+  for(const [id,label]of Object.entries(commands)){const b=document.createElement('button');b.id=id;b.textContent=label;b.onclick=()=>actions.command(id);$('common-actions').append(b);}
+  const settings=document.createElement('section');settings.className='clip-adjustments';settings.innerHTML='<h2>選取片段</h2><label>播放速度<select id="clip-speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value=".75">0.75×</option><option value="1" selected>正常 1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="4">4×</option></select></label><label>音量（0 為靜音）<input id="clip-volume" type="range" min="0" max="100" value="100"></label><div class="two-columns"><label>淡入（秒）<input id="clip-fadeIn" type="number" min="0" max="3" step=".1" value="0"></label><label>淡出（秒）<input id="clip-fadeOut" type="number" min="0" max="3" step=".1" value="0"></label></div><label>片段標題<input id="clip-title" maxlength="160" placeholder="顯示在影片下方"></label>';
+  common.after(settings);
+  for(const key of ['speed','volume','fadeIn','fadeOut','title']){const input=$(`clip-${key}`),change=()=>actions.clip(key,key==='title'?input.value:Number(input.value)/(key==='volume'?100:1),{live:input.type==='range'});input.onchange=change;if(input.type==='range')input.oninput=change;}
+  const person=document.createElement('details');person.className='person-style';person.open=true;person.innerHTML='<summary>人像外觀 · 套用全部片段</summary><label>外框形狀<select id="person-shape"><option value="rectangle">矩形</option><option value="rounded">圓角矩形</option><option value="circle">圓框</option></select></label><label>畫面填滿<select id="person-fit"><option value="contain">完整顯示</option><option value="cover">裁切填滿</option></select></label><label>人像內部放大<input id="person-zoom" type="range" min="1" max="2" step=".05"></label><label>人像後方背景<select id="person-backdrop"><option value="none">透明／保留原始背景</option><option value="solid">純色</option><option value="gradient">漸層</option><option value="blur">原背景模糊</option><option value="image">自訂圖片</option></select></label><div class="two-columns"><label>背景顏色<input id="person-color" type="color"></label><label>框線顏色<input id="person-borderColor" type="color"></label></div><button id="person-image">匯入背景圖片</button><input id="person-image-file" type="file" accept="image/*" hidden><label>框線粗細<input id="person-border" type="range" min="0" max="12" step="1"></label><label><input id="person-shadow" type="checkbox"> 陰影</label><details><summary>去背邊緣調整</summary><p class="hint">閾值愈高，去除愈多背景；柔邊保留髮絲過渡，穩定度可減少閃爍但可能產生殘影。</p><label>去除閾值<input id="person-threshold" type="range" min=".1" max=".9" step=".01"></label><label>邊緣柔化<input id="person-feather" type="range" min=".01" max=".3" step=".01"></label><label>時間穩定度<input id="person-smoothing" type="range" min="0" max=".7" step=".05"></label></details>';
+  inspector.append(person);
+  const gallery=document.createElement('div');gallery.className='background-gallery';gallery.setAttribute('aria-label','預設人像背景');for(const preset of BACKGROUND_PRESETS){const button=document.createElement('button');button.type='button';button.dataset.preset=preset.id;button.title=preset.name;const img=new Image();img.src=preset.url;img.alt=preset.name;const label=document.createElement('span');label.textContent=preset.name;button.append(img,label);button.onclick=()=>actions.layout('backgroundPreset',preset.id);gallery.append(button);}person.querySelector('#person-image').before(gallery);
+  const personControls=document.createElement('section');personControls.className='person-controls';
+  const personHeading=[...inspector.children].find(n=>n.tagName==='H2'&&n.textContent==='成品人像');
+  let node=personHeading;while(node&&node!==person){const next=node.nextElementSibling;personControls.append(node);node=next;}
+  personControls.append(person);inspector.append(personControls);
+  personControls.querySelector('h2').textContent='此片段的人像';
+  personControls.querySelector('p').textContent='直接拖曳移動、拉右下角縮放。分割片段即可在指定時間切換人像顯示與外觀。';
+  const tabs=document.createElement('div');tabs.className='property-tabs';tabs.innerHTML='<button id="properties-clip" aria-pressed="true">剪輯</button><button id="properties-person" aria-pressed="false">人像</button>';inspector.prepend(tabs);inspector.dataset.tab='clip';
+  for(const name of ['clip','person'])$(`properties-${name}`).onclick=()=>{inspector.dataset.tab=name;for(const k of ['clip','person'])$(`properties-${k}`).setAttribute('aria-pressed',k===name);document.querySelector('.inspector').scrollTop=0;};
+  person.querySelector('summary').textContent='此片段的人像外觀';
+  const scope=document.createElement('p');scope.className='hint';scope.textContent='外觀、位置、大小與顯示狀態只套用此片段。要在某個時間改變人像，先分割片段再調整。';person.prepend(scope);
+  const keys=['shape','fit','zoom','backdrop','color','borderColor','border','shadow','threshold','feather','smoothing'];
+  for(const key of keys){const input=$(`person-${key}`),change=()=>actions.layout(key,input.type==='checkbox'?input.checked:input.type==='range'?Number(input.value):input.value,{live:input.type==='range'||input.type==='color'});input.onchange=change;if(input.type==='range'||input.type==='color')input.oninput=change;}
+  $('person-image').onclick=()=>$('person-image-file').click();$('person-image-file').onchange=()=>actions.image($('person-image-file').files[0]);
+  const toolbar=document.querySelector('.timeline-toolbar');toolbar.insertAdjacentHTML('beforeend','<button id="frame-back" title="左方向鍵">◀ 一格</button><button id="frame-next" title="右方向鍵">一格 ▶</button><label class="timeline-zoom">時間軸縮放 <input id="timeline-zoom" aria-label="時間軸縮放" type="range" min="1" max="8" step=".25" value="1"></label><button id="timeline-fit">符合視窗</button>');
+  $('frame-back').onclick=()=>actions.step(-1/30);$('frame-next').onclick=()=>actions.step(1/30);
+  const scroll=document.createElement('div');scroll.id='timeline-scroll';const content=document.createElement('div');content.id='timeline-content';scroll.append(content);toolbar.after(scroll);content.append($('seek'),$('time-ruler'),document.querySelector('.track'));
+  $('timeline-zoom').oninput=()=>{content.style.width=`${Number($('timeline-zoom').value)*100}%`;};$('timeline-fit').onclick=()=>{$('timeline-zoom').value=1;$('timeline-zoom').oninput();};
+  const help=document.createElement('details');help.className='edit-help';help.innerHTML='<summary>剪輯操作與快捷鍵</summary><p>空白鍵：播放／暫停 · ← →：前後一格 · Shift＋← →：前後一秒<br>S / ⌘B：分割 · I / O：裁切至播放頭 · Delete：刪除並接合<br>⌘C / X / V：複製／剪下／貼上 · ⌘D：複製片段 · ⌘Z / ⇧⌘Z：復原／重做<br>拖片段兩端：裁切或延伸 · 拖片段本體：排序 · 右鍵：常用操作<br>畫面、人像與聲音同步剪輯；標題、速度、音量只影響選取片段。</p>';inspector.append(help);
+  return {sync(project,index,busy){const s=project.segments[index],l={...DEFAULT_LAYOUT,...project.layout,...s?.layout};
+    for(const key of ['speed','volume','fadeIn','fadeOut','title']){const input=$(`clip-${key}`);if(document.activeElement!==input)input.value=key==='volume'?(s?.volume??1)*100:s?.[key]??(key==='speed'?1:key==='title'?'':0);input.disabled=busy||!s;}
+    for(const key of keys){const input=$(`person-${key}`);if(input.type==='checkbox')input.checked=l[key];else input.value=l[key];input.disabled=busy||!s;}
+    for(const button of gallery.children){button.disabled=busy||!s;button.setAttribute('aria-pressed',l.backdrop==='image'&&button.dataset.preset===l.backgroundPreset);}
+    for(const id of [...Object.keys(commands),'person-image','frame-back','frame-next'])$(id).disabled=busy||!s;
+  }};
+}
