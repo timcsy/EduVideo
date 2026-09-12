@@ -1,0 +1,23 @@
+# Dependencies and local build caches
+node_modules/
+.build-whisper/
+
+# Generated web / desktop builds
+dist/
+electron-dist/
+src-tauri/target/
+*.dmg
+*.blockmap
+
+# Locally downloaded speech models and runtime binaries
+native/speech/*.bin
+
+# User-generated project packages and recordings
+outputs/
+*.eduv
+*.eduvideo
+
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/

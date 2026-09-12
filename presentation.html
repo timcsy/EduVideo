@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EduVideo 簡報輸出</title>
+    <style>
+      :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "PingFang TC", sans-serif; background: #05080d; color: #fff; }
+      * { box-sizing: border-box; }
+      body { margin: 0; width: 100vw; height: 100vh; overflow: hidden; background: #05080d; }
+      #presentation { position: fixed; inset: 0; display: grid; place-items: center; }
+      .waiting { color: #8294a8; font-size: 16px; }
+      .clean-slide { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: linear-gradient(130deg, var(--slide-color), #334b66); }
+      .slide-background { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #fff; }
+      .slide-copy { position: absolute; left: 9%; top: 17%; z-index: 2; }
+      .eyebrow { font-size: 13px; letter-spacing: 2px; color: #a9c9ec; }
+      h1 { max-width: 58vw; margin: 6vh 0 2vh; font-size: clamp(38px, 5vw, 76px); line-height: 1.15; }
+      p { color: #c5d7e8; font-size: clamp(18px, 2vw, 30px); }
+      .rule { width: 24vw; height: 5px; margin-top: 4vh; border-radius: 9px; background: #6fa9e8; }
+      .annotation { position: absolute; z-index: 4; color: var(--marker-color); font-weight: 800; text-shadow: 0 1px 2px #0008; transform: translate(-50%,-50%); }
+      .annotation.arrow { font-size: 5vw; transform: translate(-50%,-50%) rotate(-18deg); }
+      .annotation.pen { width: 10vw; height: 4vw; border: .35vw solid var(--marker-color); border-radius: 50%; transform: translate(-50%,-50%) rotate(-8deg); }
+      .annotation.highlight { width: 14vw; height: 3.5vw; background: #ffd16699; border-radius: 4px; transform: translate(-50%,-50%) rotate(-5deg); }
+      .annotation.text { padding: .5vw .8vw; border-radius: 5px; background: #101822bb; font-size: 2vw; }
+      .stroke-annotation { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; }
+    </style>
+  </head>
+  <body>
+    <main id="presentation"><div class="waiting">正在等待 EduVideo 傳送簡報…</div></main>
+    <script type="module" src="./src/presentation.js"></script>
+  </body>
+</html>

@@ -1,0 +1,92 @@
+{
+  "name": "eduvideo",
+  "version": "0.6.2",
+  "description": "Cross-platform teaching video recorder and editor",
+  "author": "EduVideo",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.mjs",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node scripts/server.mjs",
+    "build:web": "node scripts/build-web.mjs",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "npm run build:web && tauri build",
+    "electron:dev": "ELECTRON_DEV=1 electron .",
+    "electron:build": "npm run build:web && electron-builder --mac dmg"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.5.0",
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "extraResources": [
+      {
+        "from": "native/speech",
+        "to": "speech",
+        "filter": [
+          "whisper-cli",
+          "LICENSE*",
+          "README.md"
+        ]
+      }
+    ],
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**"
+    ],
+    "appId": "tw.eduvideo.studio",
+    "productName": "EduVideo Studio",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "src/speech-models.js"
+    ],
+    "directories": {
+      "output": "electron-dist"
+    },
+    "mac": {
+      "minimumSystemVersion": "15.0",
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.video",
+      "extendInfo": {
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeName": "EduVideo Project",
+            "CFBundleTypeRole": "Editor",
+            "LSHandlerRank": "Owner",
+            "LSItemContentTypes": [
+              "tw.eduvideo.project"
+            ],
+            "LSTypeIsPackage": true
+          }
+        ],
+        "UTExportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "tw.eduvideo.project",
+            "UTTypeDescription": "EduVideo Project",
+            "UTTypeConformsTo": [
+              "com.apple.package"
+            ],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": [
+                "eduv"
+              ]
+            }
+          }
+        ],
+        "NSCameraUsageDescription": "EduVideo 需要使用攝影機錄製講者人像。",
+        "NSMicrophoneUsageDescription": "EduVideo 需要使用麥克風錄製講解聲音。",
+        "NSAudioCaptureUsageDescription": "EduVideo 需要擷取簡報播放時的系統音訊。"
+      }
+    }
+  },
+  "dependencies": {
+    "@mediapipe/selfie_segmentation": "^0.1.1675465747",
+    "fflate": "^0.8.3",
+    "ffmpeg-static": "^5.2.0",
+    "pdfjs-dist": "^4.10.38"
+  }
+}
