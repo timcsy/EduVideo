@@ -1,0 +1,21 @@
+:root{font:14px/1.5 system-ui;color:#eee}*{box-sizing:border-box}body{margin:0;background:#191b24}button,select,input,textarea{font:inherit;color:inherit;background:#2d2b3a;border:1px solid #57516d;border-radius:7px;padding:6px}button{cursor:pointer}button[aria-pressed=true]{background:#7655bc}header{padding:10px;background:#24212f;-webkit-app-region:drag;display:flex;justify-content:space-between}header button{-webkit-app-region:no-drag}section{padding:10px;display:flex;flex-wrap:wrap;gap:6px}select{max-width:100%}small{display:block;padding:0 10px;color:#c5bfda}textarea{width:calc(100% - 20px);height:calc(100vh - 65px);margin:10px;resize:none;background:#20212b}body[data-role=overlay]{background:transparent;overflow:hidden}canvas{width:100vw;height:100vh;display:block;touch-action:none;cursor:crosshair}#align{position:absolute;inset:0;border:4px dashed #bc9dff;pointer-events:none}#align header{pointer-events:auto;-webkit-app-region:drag}#align[hidden]{display:none}body[data-align=true] canvas{pointer-events:none}
+body[data-role=toolbar]{overflow:hidden;border:1px solid #565064;border-radius:9px;height:100vh}
+body[data-role=toolbar] header{font-size:11px;line-height:20px;padding:3px 8px;align-items:center}
+body[data-role=toolbar] header button{height:22px;width:26px;padding:2px;background:transparent;border:0}
+body[data-role=toolbar] section{padding:5px 6px;gap:4px;align-items:center;flex-wrap:nowrap}
+body[data-role=toolbar] button{width:29px;height:29px;padding:5px;display:inline-grid;place-items:center;flex-shrink:0}
+body[data-role=toolbar] button svg{width:18px;height:18px}
+body[data-role=toolbar] [hidden]{display:none!important}
+body[data-role=toolbar] select{height:29px;padding:3px;font-size:11px;min-width:0}
+body[data-role=toolbar] #sources{width:139px}
+body[data-role=toolbar] #tool{width:75px}
+body[data-role=toolbar] input[type=color]{width:29px;height:29px;padding:2px}
+body[data-role=toolbar] #hint{display:none}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid #d0afff;outline-offset:1px}
+body[data-role=toolbar] [data-action=record]{background:#c94056;color:white;border-color:#f47789}
+body[data-role=toolbar] #record-state{font-size:10px;font-variant-numeric:tabular-nums;margin-left:auto;margin-right:8px;max-width:180px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+body[data-role=camera]{overflow:hidden;border:1px solid #645875;border-radius:12px;height:100vh}
+body[data-role=camera] header{font-size:11px;padding:4px 9px;height:30px;align-items:center}
+body[data-role=camera] header button{padding:0 6px}
+body[data-role=camera] video{display:block;width:100%;height:calc(100vh - 30px);object-fit:contain;transform:scaleX(-1);background:#080d15}
+#camera-error:empty{display:none}#camera-error{position:absolute;bottom:0;padding:8px;background:#511e2a;font-size:11px}

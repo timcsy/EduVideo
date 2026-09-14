@@ -6,18 +6,19 @@
     <title>選擇要錄製的畫面</title>
     <style>
       :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", sans-serif; background: #0f151d; color: #e9eef5; }
-      body { margin: 0; padding: 22px; }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 22px; height:100vh;display:flex;flex-direction:column;overflow:hidden; }
       h1 { font-size: 16px; margin: 0 0 5px; }
       p { color: #91a2b5; font-size: 12px; line-height: 1.55; margin: 0 0 17px; }
-      #sources { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-height: 300px; overflow: auto; }
-      .source { color: #e9eef5; background: #17212d; border: 1px solid #2e4053; border-radius: 9px; padding: 7px; text-align: left; cursor: pointer; }
+      #sources { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; min-height:0;flex:1; overflow-y:auto;overflow-x:hidden;align-content:start;padding:3px; }
+      .source { min-width:0;width:100%;align-self:start;color: #e9eef5; background: #17212d; border: 1px solid #2e4053; border-radius: 9px; padding: 7px; text-align: left; cursor: pointer; }
       .source:hover, .source:focus-visible { background: #223850; border-color: #75b1f2; outline: 2px solid #75b1f2; outline-offset: 1px; }
       .source.recommended { border-color: #62b0ff; box-shadow: 0 0 0 2px #62b0ff33; }
       .source.risky { opacity: .68; }
-      .source img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 5px; background: #080d13; }
+      .source img { display: block; width: 100%; height:auto;aspect-ratio: 16 / 9; object-fit: contain; border-radius: 5px; background: #080d13; }
       .source span { display: block; font-size: 11px; margin: 7px 2px 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .source .badge { color: #7fc1ff; font-size: 10px; margin-top: 4px; }.source.risky .badge { color: #f1b479; }
-      .actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+      .actions { display: flex; flex-shrink:0;justify-content: flex-end; margin-top: 16px; }
       button.cancel { border: 1px solid #394b5e; border-radius: 6px; background: transparent; color: #aebdcb; padding: 7px 14px; cursor: pointer; }
       button.cancel:hover, button.cancel:focus-visible { background: #1d2b3a; color: #fff; }
       .empty { color: #91a2b5; font-size: 12px; padding: 24px 0; }
@@ -25,7 +26,7 @@
   </head>
   <body>
     <h1>選擇要錄製的畫面</h1>
-    <p>建議選「EduVideo 簡報輸出」：只錄簡報與標記，不會把右下角的人像預覽一起錄進去。人像會另外保存。</p>
+    <p>選擇示範用的視窗或螢幕，加入準備清單。之後可以在錄製中快速切換。選取整個螢幕時，螢幕上的工具與筆記也可能入鏡。</p>
     <div id="sources" aria-label="可錄製的畫面來源"></div>
     <div class="actions"><button class="cancel" id="cancel">取消</button></div>
     <script>

@@ -20,6 +20,8 @@ import {drawCaptions,outputCues,applyOutputCues,parseSrt,serializeSrt,updateCue,
 import {browserModelStatuses,downloadBrowserModel,removeBrowserModel,importBrowserModel,transcribeInBrowser} from './browser-speech.js';
 import {transcribeWithApi} from './speech-api.js';
 import {duplicateSegment,updateSegment,segmentDuration,clipAt,drawClipOverlay,clipOpacity,compositionProject} from './clip-tools.js';
+import {mountRecordingWorkspace} from './recording-workspace.js';
+import {mountSlideLibrary} from './slide-library.js';
 
 mountStudio();
 const $ = id => document.getElementById(id);
@@ -53,6 +55,7 @@ let mode = 'record', audioMeterContext, analyser;
 async function setMode(next) {
   if (recording || busy) return;
   pause();personEditing=false;mode = next; document.body.dataset.mode = next;
+  if(next==='edit')await recordingWorkspace?.hide();
   $('mode-record').setAttribute('aria-pressed', next === 'record');
   $('mode-edit').setAttribute('aria-pressed', next === 'edit');
   $('viewer-title').textContent = next === 'record' ? '錄製預覽' : '成品預覽';
@@ -70,10 +73,13 @@ const videos = [$('screen-video'), $('camera-video')];
 let urls = [], store;
 let outputDrag = null;
 let editorUI,annotations,clipClipboard,libraryUI,timelineUI,captionUI,personEditing=false,speechCancelled=false;
+let recordingWorkspace,slideLibrary;
 const takeLandmarks={};
 const status = message => { $('status').textContent = message; };
 async function save() { await store.save({ project, assets, slides, notes: $('notes').value });$('project-save').textContent='儲存專案 •'; status('已自動暫存素材與剪輯 · ⌘S 儲存至 .eduv 專案'); }
 function controls() {
+  slideLibrary?.controls();
+  recordingWorkspace?.syncTools();
   libraryUI?.sync(project,assets,busy||Boolean(recording));captionUI?.sync(project,selected,busy||Boolean(recording));
   if($('project-save-as'))$('project-save-as').disabled=busy||Boolean(recording);
   editorUI?.sync(project,selected,busy||Boolean(recording));
@@ -82,14 +88,14 @@ function controls() {
   for (const id of ['project-open','project-save','camera-device','audio-device','move-left','move-right','redo','output-background','output-visible','output-mirror','person-resize']) $(id).disabled = busy || Boolean(recording);
   $('redo').disabled ||= !future.length;
   $('mode-record').disabled = $('mode-edit').disabled = busy || Boolean(recording);
-  $('record').disabled = busy || !preview;
+  $('record').disabled = busy;
   $('record').textContent = recording ? '停止並保存' : '開始錄製';
   for (const id of ['import', 'source', 'devices', 'export', 'play', 'split', 'delete', 'trim', 'undo']) $(id).disabled = busy || Boolean(recording);
   $('export').disabled ||= !project.segments.length;
   for (const id of ['play', 'split', 'delete', 'trim']) $(id).disabled ||= !project.segments.length;
   $('undo').disabled ||= !history.length;
 }
-async function guarded(action) { if (busy) return; const wasRecording = Boolean(recording); busy = true; controls(); try { await action(); } catch (e) { status(`操作失敗：${e.message}`); } finally { busy = false; controls(); if (wasRecording && !recording && project.segments.length) await setMode('edit'); } }
+async function guarded(action) { if (busy) return; const wasRecording = Boolean(recording); busy = true; controls(); try { await action(); } catch (e) { status(`操作失敗：${e.message}`); } finally { busy = false; try { if (wasRecording && !recording && project.segments.length) await setMode('edit'); } finally {controls();} } }
 function timeline() {
   layoutControls();
   $('timeline-empty').hidden = Boolean(project.segments.length);
@@ -128,6 +134,7 @@ function fit(source, x = 0, y = 0, w = 1280, h = 720) {
 }
 function drawSlide() {
   ctx.fillStyle = '#080d15'; ctx.fillRect(0, 0, 1280, 720);
+  if(recordingWorkspace?.draw()){annotations?.draw(ctx);return;}
   if (image) fit(image); else { ctx.fillStyle = '#91a7c0'; ctx.font = '28px system-ui'; ctx.fillText('匯入簡報，或選擇錄製其他視窗', 340, 360); }
   ctx.strokeStyle = '#ff5268'; ctx.lineWidth = 4; ctx.lineCap = 'round';
   for (const points of slides[page]?.strokes || []) { ctx.beginPath(); points.forEach((p, i) => i ? ctx.lineTo(...p) : ctx.moveTo(...p)); ctx.stroke(); }
@@ -136,8 +143,9 @@ function drawSlide() {
 function showSlide() {
   $('page-count').textContent = `${slides.length ? page + 1 : 0} / ${slides.length}`;
   pause(); currentTake = null; image = null;
-  if (slides[page]) { const img = new Image(); img.onload = () => { image = img; if (mode === 'record' && !currentTake) drawSlide(); }; img.src = slides[page].image; } else drawSlide();
-  $('slides').replaceChildren(...slides.map((slide, i) => { const b = document.createElement('button'), img = new Image(); img.src = slide.image; img.alt = `第 ${i + 1} 頁`; b.append(img); b.className = i === page ? 'active' : ''; b.onclick = () => { page = i; showSlide(); }; return b; }));
+  const currentSlide=slides[page];
+  if (currentSlide) { const img = new Image(); img.onload = () => { if(slides[page]!==currentSlide)return;image = img; if (mode === 'record' && !currentTake) drawSlide(); }; img.src = currentSlide.image; } else drawSlide();
+  slideLibrary?.render();recordingWorkspace?.syncTools();
 }
 function pause() { playing = false; videos.forEach(v => v.pause()); $('play').textContent = '播放'; }
 function resumeVideos(){for(const video of videos)if(video.paused)video.play().catch(error=>{if(playing)status(`播放素材失敗：${error.message}`);});}
@@ -153,7 +161,7 @@ async function seek() {
   await Promise.all(videos.map(v => new Promise(resolve => { const sourceTime=Math.max(.001,target.sourceTime);if(v.currentTime>0&&Math.abs(v.currentTime-sourceTime)<.03)return resolve();v.addEventListener('seeked',resolve,{once:true});v.currentTime=sourceTime; })));
   await drawEdited();if(playing)resumeVideos();$('camera').hidden = true;
 }
-$('devices').onclick = () => guarded(async () => {
+async function openDevices(){
   const next = await navigator.mediaDevices.getUserMedia({ video: $('camera-device').value ? { deviceId: { exact: $('camera-device').value } } : true, audio: $('audio-device').value ? { deviceId: { exact: $('audio-device').value } } : true });
   preview?.getTracks().forEach(t => t.stop()); await audioMeterContext?.close(); preview = next;
   $('camera').srcObject = preview; $('camera').hidden = false; await $('camera').play();
@@ -161,13 +169,19 @@ $('devices').onclick = () => guarded(async () => {
   const devices = await navigator.mediaDevices.enumerateDevices();
   for (const [id, kind] of [['camera-device','videoinput'], ['audio-device','audioinput']]) { const value = $(id).value; $(id).replaceChildren(new Option('系統預設', ''), ...devices.filter(d => d.kind === kind).map((d, i) => new Option(d.label || `裝置 ${i + 1}`, d.deviceId))); $(id).value = value; }
   $('devices').textContent = '相機與麥克風 ✓'; status('相機與麥克風已開啟，確認鏡像人像後即可錄製');
-});
+}
+$('devices').onclick = () => guarded(openDevices);
 $('import').onclick = () => $('file').click();
 $('file').onchange = () => guarded(async () => {
-  const file = $('file').files[0]; if (!file) return;
-  if (file.type === 'application/pdf') { const pdfjs = await import('../vendor/pdfjs/pdf.mjs'); pdfjs.GlobalWorkerOptions.workerSrc = new URL('../vendor/pdfjs/pdf.worker.mjs', import.meta.url).href; slides = await renderPdfSlides(file, { pdfjs, onProgress: (n, total) => status(`匯入 ${n}/${total} 頁`) }); }
-  else { const data = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); }); slides = [{ image: data }]; }
-  page = 0; showSlide(); await save();
+  const files=Array.from($('file').files);$('file').value='';if(!files.length)return;
+  const incoming=[];
+  for(const file of files){
+    if (file.type === 'application/pdf'||file.name.toLowerCase().endsWith('.pdf')) { const pdfjs = await import('../vendor/pdfjs/pdf.mjs'); pdfjs.GlobalWorkerOptions.workerSrc = new URL('../vendor/pdfjs/pdf.worker.mjs', import.meta.url).href; incoming.push(...await renderPdfSlides(file, { pdfjs, onProgress: (n, total) => status(`匯入 ${n}/${total} 頁`) })); }
+    else if(file.type.startsWith('image/')) { const data = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); }); incoming.push({ title:file.name,image: data,annotations:[] }); }
+    else throw new Error('請選擇 PDF 或圖片');
+  }
+  // Import owns the busy guard; the prepared pages are committed as one undoable edit.
+  await slideLibrary.insert(incoming,true);
 });
 for (const [id, step] of [['prev', -1], ['next', 1]]) $(id).onclick = () => { page = Math.max(0, Math.min(slides.length - 1, page + step)); showSlide(); };
 canvas.onpointerdown = e => {
@@ -204,7 +218,7 @@ $('clear').onclick = () => { if (slides[page]) { slides[page].strokes = []; draw
 $('notes').onchange = () => guarded(save);
 $('record').onclick = () => guarded(async () => {
   if (recording) {
-    const take = recording; const duration = elapsed(take); recording = null; clearInterval(take.timer); clearInterval(take.checkpoint);
+    const take = recording; const duration = elapsed(take); recording = null; clearInterval(take.timer); clearInterval(take.checkpoint);clearInterval(take.frames);
     const blobs = await Promise.all(take.recorders.map(r => new Promise((resolve, reject) => { r.recorder.onstop = () => resolve(new Blob(r.chunks, { type: r.recorder.mimeType })); r.recorder.onerror = e => reject(e.error); r.recorder.stop(); })));
     take.stream.getTracks().forEach(t => t.stop()); displayLive.srcObject = null; displayLive.hidden = true;
     assets[take.id] = { screen: blobs[0], camera: blobs[1] }; history.push(project); future = []; project = addTake(project, { id: take.id, duration });
@@ -213,13 +227,14 @@ $('record').onclick = () => guarded(async () => {
   }
   pause(); showSlide(); $('camera').hidden = false;
   if ($('source').value === 'slides' && !slides.length) throw new Error('請先匯入簡報');
-  const stream = $('source').value === 'slides' ? canvas.captureStream(30) : await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+  if(!preview)await openDevices();
+  const stream = await recordingWorkspace.capture();
   try {
-    if ($('source').value === 'screen') { displayLive.srcObject = stream; displayLive.hidden = false; await displayLive.play(); }
     const recorders = [stream, preview].map(s => { const recorder = new MediaRecorder(s), chunks = []; recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); }; return { recorder, chunks }; });
-    try { $('countdown').hidden = false; for (let n = 3; n > 0; n--) { $('countdown').textContent = n; await new Promise(resolve => setTimeout(resolve, 1000)); } } finally { $('countdown').hidden = true; }
+    try { $('countdown').hidden = false; for (let n = 3; n > 0; n--) { $('countdown').textContent = n;recordingWorkspace.syncTools(); await new Promise(resolve => setTimeout(resolve, 1000)); } } finally { $('countdown').hidden = true; }
     recorders.forEach(r => r.recorder.start(1000)); recording = { id: crypto.randomUUID(), started: performance.now(), stream, recorders, pausedAt: null, pausedMs: 0 };
-    const active = recording; active.timer = setInterval(() => { $('clock').textContent = `${elapsed(active).toFixed(0)} 秒`; }, 250);
+    recording.frames=setInterval(drawSlide,1000/30);
+    const active = recording; active.timer = setInterval(() => { $('clock').textContent = `${elapsed(active).toFixed(0)} 秒`;recordingWorkspace.syncTools(); }, 250);
     active.checkpoint = setInterval(() => {
       if (!active.recorders.every(r => r.chunks.length)) return;
       const duration = Math.max(.01, elapsed(active) - 1);
@@ -239,7 +254,7 @@ $('play').onclick = () => guarded(async () => { if (playing) return pause();pers
 async function tick(now) {
   try {
     if (analyser) { const values = new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(values); $('mic-meter').value = Math.min(1, Math.sqrt(values.reduce((sum, value) => sum + ((value - 128) / 128) ** 2, 0) / values.length) * 5); }
-    if (recording && $('source').value === 'slides') drawSlide();
+    if (mode==='record'&&!currentTake&&!recording) drawSlide();
     if (playing && !recording) {
       time += (now - last) / 1000; last = now;
       if (time >= projectDuration(project)) { time = projectDuration(project); pause(); }
@@ -274,6 +289,7 @@ $('pause-record').onclick = () => {
   if (!recording || busy) return;
   if (recording.pausedAt) { recording.pausedMs += performance.now() - recording.pausedAt; recording.pausedAt = null; recording.recorders.forEach(r => r.recorder.resume()); $('pause-record').textContent = '暫停錄製'; }
   else { recording.pausedAt = performance.now(); recording.recorders.forEach(r => r.recorder.pause()); $('pause-record').textContent = '繼續錄製'; }
+  recordingWorkspace?.syncTools();
 };
 for (const [id, step] of [['move-left', -1], ['move-right', 1]]) $(id).onclick = () => guarded(() => edit(p => { const index = selected + step; if (index < 0 || index >= p.segments.length) return p; const segments = p.segments.slice(); [segments[index], segments[selected]] = [segments[selected], segments[index]]; selected = index; return { ...p, segments }; }));
 for (const key of ['visible','mirror','background']) $(`output-${key}`).onchange = () => guarded(() => edit(p => changePerson(p, { [key]: $(`output-${key}`).checked })));
@@ -281,11 +297,12 @@ $('project-save').onclick = () => guarded(()=>saveDiskProject(false));
 async function saveDiskProject(saveAs){const snapshot={project,assets,slides,notes:$('notes').value};status('正在儲存專案與原始影片…');if(window.studioNative?.saveProject){const result=await window.studioNative.saveProject(await projectFiles(snapshot),saveAs);if(result)$('project-save').textContent='儲存專案';status(result?`已儲存 ${result.path}（未壓縮專案資料夾）`:'已取消儲存');}else{download(await packProject(snapshot),'EduVideo.eduv');$('project-save').textContent='儲存專案';status('已下載 .eduv 可攜專案（瀏覽器版使用封裝檔）');}}
 $('project-open').onclick = () => {if(!window.studioNative?.openProject){$('project-file').click();return;}guarded(async()=>{if(project.takes.length&&!confirm('開啟另一專案將替換目前工作，請確認已儲存 .eduv 專案。繼續？'))return;const result=await window.studioNative.openProject();if(result)await acceptNativeProject(result);});};
 async function acceptNativeProject(result){try{await acceptProject(result.files?restoreProjectFiles(result.files):await unpackProject(new Blob([result.bytes])));status(result.path?`已開啟 ${result.path}`:'已開啟可攜專案');}catch(e){await window.studioNative?.forgetProject();throw e;}}
-async function acceptProject(incoming){pause();({project,assets,slides}=incoming);$('notes').value=incoming.notes;page=0;time=0;selected=0;currentTake=null;history=[];future=[];clipClipboard=null;timeline();layoutControls();await save();if(mode==='record')showSlide();else await seek();}
+async function acceptProject(incoming){pause();({project,assets,slides}=incoming);slideLibrary?.reset();$('notes').value=incoming.notes;page=0;time=0;selected=0;currentTake=null;history=[];future=[];clipClipboard=null;timeline();layoutControls();await save();if(mode==='record')showSlide();else await seek();}
 const saveAsButton=document.createElement('button');saveAsButton.id='project-save-as';saveAsButton.textContent='另存專案…';saveAsButton.onclick=()=>guarded(()=>saveDiskProject(true));document.querySelector('.library').append(saveAsButton);
 $('project-new').onclick = () => guarded(async () => {
   if ((project.takes.length || slides.length) && !confirm('建立新專案會替換目前工作。請先使用「備份專案」保存；確定建立？')) return;
   await window.studioNative?.forgetProject();pause(); project = newProject(); assets = {}; slides = []; $('notes').value = ''; page = 0; time = 0; selected = 0; currentTake = null; history = []; future = [];clipClipboard=null;
+  slideLibrary?.reset();
   timeline(); layoutControls(); showSlide(); await save();
 });
 $('download-originals').onclick = () => guarded(async () => {
@@ -357,8 +374,10 @@ window.studioNative?.onSpeechProgress(value=>captionUI.progress(value.stage==='e
 $('properties-person').addEventListener('click',()=>{personEditing=true;layoutControls();});
 for(const id of ['properties-clip','properties-captions'])$(id).addEventListener('click',()=>{personEditing=false;layoutControls();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){personEditing=false;layoutControls();}});
-annotations=installAnnotations({canvas,getSlide:()=>slides[page],isRecordingView:()=>mode==='record'&&!busy,redraw:drawSlide,save,status});
-$('source').onchange=()=>{document.body.dataset.source=$('source').value;if($('source').value==='screen')status('視窗／螢幕錄製不含簡報標記；需要標記時請匯入 PDF 或圖片');};
+slideLibrary=mountSlideLibrary({getState:()=>({slides,page}),apply:async next=>{({slides,page}=next);showSlide();await save();},select:i=>{page=i;recordingWorkspace?.select('slides');showSlide();},locked:()=>busy||Boolean(recording),onImport:()=>$('file').click(),status});$('file').multiple=true;
+recordingWorkspace=mountRecordingWorkspace({canvas,ctx,getMode:()=>mode,getBusy:()=>busy,getRecording:()=>recording,getPreview:()=>preview,getPage:()=>page,getSlideCount:()=>slides.length,getSlide:()=>slides[page],getNotes:()=>$('notes').value,setNotes:value=>{$('notes').value=value;},redraw:drawSlide,replaceAnnotations:(items,transient)=>annotations?.replace(items,transient),status});
+annotations=installAnnotations({canvas,getSlide:()=>recordingWorkspace.document,isRecordingView:()=>mode==='record'&&!busy,redraw:()=>{drawSlide();recordingWorkspace.syncTools();},save,status});
+$('source').onchange=()=>{if($('source').value==='slides')recordingWorkspace.select('slides');else recordingWorkspace.prepare();};
 document.addEventListener('keydown', e => {
   const mod=e.metaKey||e.ctrlKey,key=e.key.toLowerCase();
   if(mod&&key==='s'){e.preventDefault();if(!busy&&!recording)$('project-save').click();return;}

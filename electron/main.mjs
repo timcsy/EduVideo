@@ -6,11 +6,13 @@ import {listSpeechModels,downloadSpeechModel,removeSpeechModel,resolveSpeechMode
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encodeMp4 } from './encode.mjs';
+import {installDesktopTools} from './desktop-tools.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const isDev = process.env.ELECTRON_DEV === '1';
 const devUrl = process.env.EDUVIDEO_DEV_URL || 'http://127.0.0.1:4173/studio.html';
 let mainWindow = null;
+let desktopTools=null,captureInfo=null;
 let sourcePicker = null;
 let resolveSource = null;
 let encodingController = null;
@@ -52,6 +54,7 @@ function chooseDesktopSource(sources) {
       }
     });
     sourcePicker.on('closed', () => closeSourcePicker());
+    desktopTools?.protect();
     sourcePicker.webContents.on('did-finish-load', () => {
       sourcePicker?.webContents.send('edu:sources', sources.map(source => ({
         id: source.id,
@@ -85,6 +88,7 @@ function installMediaHandlers() {
       });
       const selectedId = await chooseDesktopSource(sources);
       const source = sources.find(item => item.id === selectedId);
+      captureInfo=source?{id:source.id,name:source.name,kind:source.id.startsWith('screen:')?'screen':'window',displayId:source.display_id}:null;
       // Keep the first capture path focused on the selected video source.
       // The presenter microphone is captured by the separate camera stream;
       // system-audio loopback can be added after the platform path is stable.
@@ -122,9 +126,13 @@ async function createWindow() {
   });
   if (isDev) await mainWindow.loadURL(devUrl);
   else await mainWindow.loadFile(join(root, 'dist', 'studio.html'));
+  mainWindow.on('closed',()=>{mainWindow=null;desktopTools?.dispose();});
+  mainWindow.on('show',()=>desktopTools?.mainShown());
 }
 
 app.whenReady().then(async () => {
+  desktopTools=installDesktopTools({root,getMain:()=>mainWindow,isDev});
+  ipcMain.handle('studio:capture-info',event=>{checkSender(event);return captureInfo;});
   const speechDirectory=app.isPackaged?join(process.resourcesPath,'speech'):join(root,'native','speech'),modelDirectory=join(app.getPath('userData'),'speech-models');
   ipcMain.handle('studio:speech-models',event=>{checkSender(event);return listSpeechModels(modelDirectory);});
   ipcMain.handle('studio:download-speech-model',async(event,id)=>{checkSender(event);if(modelController)throw new Error('已有模型正在下載');modelController=new AbortController();try{await downloadSpeechModel(modelDirectory,id,{signal:modelController.signal,progress:value=>{if(!event.sender.isDestroyed())event.sender.send('studio:model-progress',value);}});return listSpeechModels(modelDirectory);}finally{modelController=null;}});
@@ -155,6 +163,7 @@ app.whenReady().then(async () => {
   await createWindow();
   app.on('activate', async () => {
     if (BrowserWindow.getAllWindows().length === 0) await createWindow();
+    else if(mainWindow&&!mainWindow.isDestroyed()){mainWindow.show();mainWindow.focus();}
   });
 });
 

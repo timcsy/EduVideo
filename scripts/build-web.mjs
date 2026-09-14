@@ -9,6 +9,7 @@ fs.mkdirSync(dist, { recursive: true });
 fs.copyFileSync(path.join(root, 'index.html'), path.join(dist, 'index.html'));
 fs.copyFileSync(path.join(root, 'presentation.html'), path.join(dist, 'presentation.html'));
 fs.copyFileSync(path.join(root, 'studio.html'), path.join(dist, 'studio.html'));
+fs.copyFileSync(path.join(root, 'desktop-tools.html'), path.join(dist, 'desktop-tools.html'));
 fs.cpSync(path.join(root, 'src'), path.join(dist, 'src'), { recursive: true });
 const vendor = path.join(root, 'vendor');
 fs.mkdirSync(vendor, { recursive: true });

@@ -5,7 +5,7 @@ export function installAnnotations({canvas,getSlide,isRecordingView,redraw,save,
   bar.innerHTML=`<select id="annotation-tool" aria-label="標記工具">${Object.entries(names).map(([k,v])=>`<option value="${k}" ${k==='pen'?'selected':''}>${v}</option>`).join('')}</select><input id="annotation-color" type="color" value="#ff5268" aria-label="標記顏色"><select id="annotation-width" aria-label="標記粗細"><option value="2">細</option><option value="4" selected>中</option><option value="8">粗</option></select><button id="annotation-undo" title="復原這頁的標記">復原標記</button><button id="annotation-redo">重做</button><button id="annotation-delete">刪除選取</button>`;
   document.querySelector('.slide-tools').before(bar);
   const textInput=document.createElement('input');textInput.id='annotation-text';textInput.placeholder='輸入標記文字，再點畫面';textInput.maxLength=160;textInput.setAttribute('aria-label','標記文字');textInput.hidden=true;bar.append(textInput);
-  const $=id=>document.getElementById(id),past=new WeakMap(),future=new WeakMap();let gesture,selected=-1,laser,laserTimer;
+  const $=id=>document.getElementById(id),past=new WeakMap(),future=new WeakMap();let gesture,selected=-1,laser,laserTimer,externalGesture;
   $('annotation-tool').onchange=()=>{textInput.hidden=$('annotation-tool').value!=='text';if(!textInput.hidden)textInput.focus();};
   const snapshot=s=>structuredClone(s.annotations||[]);
   function remember(s) { if(s.strokes?.length){s.annotations||=[];for(const points of s.strokes)if(points.length)s.annotations.push({...makeAnnotation('pen',points[0],points.at(-1)),points:structuredClone(points)});s.strokes=[];}const h=past.get(s)||[];h.push(snapshot(s));past.set(s,h.slice(-100));future.set(s,[]); }
@@ -33,5 +33,13 @@ export function installAnnotations({canvas,getSlide,isRecordingView,redraw,save,
   },true);
   const end=e=>{if(!isRecordingView())return;e.stopImmediatePropagation();if(gesture?.tool==='laser'){clearTimeout(laserTimer);laserTimer=setTimeout(()=>{laser=null;redraw();},500);}gesture=null;finish();};
   canvas.addEventListener('pointerup',end,true);canvas.addEventListener('pointercancel',end,true);
-  return {draw(ctx){for(const a of getSlide()?.annotations||[])drawAnnotation(ctx,a);if(laser){ctx.save();ctx.shadowColor='#ff3344';ctx.shadowBlur=20;ctx.fillStyle='#ff3344';ctx.beginPath();ctx.arc(...laser,7,0,Math.PI*2);ctx.fill();ctx.restore();}}};
+  return {replace(items,transient=false){
+    const s=getSlide();if(!s)return;
+    if(transient&&externalGesture?.s!==s)externalGesture={s,before:snapshot(s)};
+    if(!transient){
+      if(externalGesture?.s===s){const h=past.get(s)||[];h.push(externalGesture.before);past.set(s,h.slice(-100));future.set(s,[]);externalGesture=null;}
+      else remember(s);
+    }
+    s.annotations=structuredClone(items);if(transient)redraw();else finish();
+  },draw(ctx){for(const a of getSlide()?.annotations||[])drawAnnotation(ctx,a);if(laser){ctx.save();ctx.shadowColor='#ff3344';ctx.shadowBlur=20;ctx.fillStyle='#ff3344';ctx.beginPath();ctx.arc(...laser,7,0,Math.PI*2);ctx.fill();ctx.restore();}}};
 }

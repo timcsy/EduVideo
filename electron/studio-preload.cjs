@@ -1,5 +1,13 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('studioNative', {
+  captureInfo:()=>ipcRenderer.invoke('studio:capture-info'),
+  cameraSignal:value=>ipcRenderer.send('tools:camera-signal',value),
+  onCameraSignal:callback=>ipcRenderer.on('tools:camera-signal',(_e,value)=>callback(value)),
+  toggleDesktopTools:value=>ipcRenderer.invoke('studio:tools-toggle',value),
+  updateDesktopTools:value=>ipcRenderer.send('studio:tools-state',value),
+  onToolsCommand:callback=>ipcRenderer.on('studio:tools-command',(_e,value)=>callback(value)),
+  onToolsAnnotations:callback=>ipcRenderer.on('studio:tools-annotations',(_e,value)=>callback(value)),
+  onToolsNotes:callback=>ipcRenderer.on('studio:tools-notes',(_e,value)=>callback(value)),
   transcribe: (bytes,options) => ipcRenderer.invoke('studio:transcribe',bytes,options),
   speechModels: () => ipcRenderer.invoke('studio:speech-models'),
   downloadSpeechModel: id => ipcRenderer.invoke('studio:download-speech-model',id),

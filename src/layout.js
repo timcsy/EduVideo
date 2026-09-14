@@ -1,4 +1,4 @@
-export const DEFAULT_LAYOUT = { x: .75, y: .68, width: .22, visible: true, mirror: false, background: false, shape:'rectangle', backdrop:'none', color:'#24334d', border:0, borderColor:'#ffffff', shadow:false, fit:'contain', zoom:1, threshold:.45, feather:.12, smoothing:.2 };
+export const DEFAULT_LAYOUT = { x: .75, y: .68, width: .22, visible: true, mirror: true, background: false, shape:'rectangle', backdrop:'none', color:'#24334d', border:0, borderColor:'#ffffff', shadow:false, fit:'contain', zoom:1, threshold:.45, feather:.12, smoothing:.2 };
 export function updateLayout(project, change) {
   const layout = { ...DEFAULT_LAYOUT, ...project.layout, ...change };
   if (!['x', 'y', 'width'].every(k => Number.isFinite(layout[k]))) throw new Error('人像位置無效');
