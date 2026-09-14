@@ -5,7 +5,6 @@ node_modules/
 # Generated web / desktop builds
 dist/
 electron-dist/
-src-tauri/target/
 *.dmg
 *.blockmap
 

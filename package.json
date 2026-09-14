@@ -10,14 +10,11 @@
     "test": "node --test test/*.test.js",
     "start": "node scripts/server.mjs",
     "build:web": "node scripts/build-web.mjs",
-    "desktop:dev": "tauri dev",
-    "desktop:build": "npm run build:web && tauri build",
     "electron:dev": "ELECTRON_DEV=1 electron .",
     "electron:build": "npm run build:web && electron-builder --mac dmg",
     "electron:build:win": "npm run build:web && electron-builder --win nsis --x64"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.5.0",
     "electron": "^44.3.0",
     "electron-builder": "^26.15.3"
   },

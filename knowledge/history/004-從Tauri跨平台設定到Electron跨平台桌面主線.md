@@ -24,7 +24,7 @@
 
 - **曾考慮：**以 Tauri 取得較小的安裝檔與原生 WebView，並用它的 bundle targets 一次產生三平台安裝檔。
 - **為什麼不採用：**所有桌面能力都要以 Rust 命令重寫一次，且各平台 WebView 的媒體擷取能力不一致；對目前的產品而言，Electron 已經證明能在 Windows 上完整運作，重寫沒有換到使用者看得到的收益。
-- **後續清理：**src-tauri/、package.json 的 desktop:dev／desktop:build 指令與 test/platform.test.js 仍在程式碼中，需另外移除。
+- **清理：**src-tauri/（含佔位用的「F.」圖示）、package.json 的 desktop:dev／desktop:build 指令與 @tauri-apps/cli、test/platform.test.js 已於同日移除，見 git 歷史。
 
 ## 狀態
 
