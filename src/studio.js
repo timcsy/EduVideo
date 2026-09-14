@@ -22,10 +22,11 @@ import {transcribeWithApi} from './speech-api.js';
 import {duplicateSegment,updateSegment,segmentDuration,clipAt,drawClipOverlay,clipOpacity,compositionProject} from './clip-tools.js';
 import {mountRecordingWorkspace} from './recording-workspace.js';
 import {mountSlideLibrary} from './slide-library.js';
+import {shortcutLabel,isMacPlatform} from './shortcut-label.js';
 
 mountStudio();
 const $ = id => document.getElementById(id);
-document.querySelector('header nav').insertAdjacentHTML('afterend', '<button id="project-save" title="⌘S 儲存專案">儲存專案</button><button id="project-open">開啟專案</button><input id="project-file" type="file" accept=".eduv,.eduvideo,.zip" hidden>');
+document.querySelector('header nav').insertAdjacentHTML('afterend', `<button id="project-save" title="${shortcutLabel('⌘S 儲存專案')}">儲存專案</button><button id="project-open">開啟專案</button>${window.studioNative&&!isMacPlatform()?'<button id="project-import" title="開啟 .eduvideo 或 .zip 可攜封裝檔">開啟封裝檔…</button>':''}<input id="project-file" type="file" accept=".eduv,.eduvideo,.zip" hidden>`);
 document.querySelector('.library').insertAdjacentHTML('beforeend', '<button id="project-new">建立新專案</button><button id="download-originals">下載原始素材</button>');
 document.querySelector('.edit-inspector').insertAdjacentHTML('beforeend', '<h2>成品人像</h2><p class="hint">直接拖曳預覽中的人像移動位置，拉右下角圓點調整大小。匯出會套用相同設定。</p><label><input id="output-visible" type="checkbox" checked> 顯示人像</label><label><input id="output-mirror" type="checkbox"> 成品鏡像</label><label><input id="output-background" type="checkbox"> 人像去背</label>');
 document.querySelector('.timeline-toolbar').insertAdjacentHTML('beforeend', '<button id="redo">重做</button><button id="move-left">往前移</button><button id="move-right">往後移</button>');
@@ -76,7 +77,7 @@ let editorUI,annotations,clipClipboard,libraryUI,timelineUI,captionUI,personEdit
 let recordingWorkspace,slideLibrary;
 const takeLandmarks={};
 const status = message => { $('status').textContent = message; };
-async function save() { await store.save({ project, assets, slides, notes: $('notes').value });$('project-save').textContent='儲存專案 •'; status('已自動暫存素材與剪輯 · ⌘S 儲存至 .eduv 專案'); }
+async function save() { await store.save({ project, assets, slides, notes: $('notes').value });$('project-save').textContent='儲存專案 •'; status(shortcutLabel('已自動暫存素材與剪輯 · ⌘S 儲存至 .eduv 專案')); }
 function controls() {
   slideLibrary?.controls();
   recordingWorkspace?.syncTools();
@@ -310,6 +311,8 @@ $('download-originals').onclick = () => guarded(async () => {
   if (!take) return;
   download(assets[take.id].screen, `EduVideo-${take.id}-screen.webm`); download(assets[take.id].camera, `EduVideo-${take.id}-camera.webm`); status('已下載原始畫面與人像素材（人像素材包含麥克風聲音）');
 });
+// Folder pickers on Windows and Linux cannot select files, so portable archives use the browser file picker.
+if ($('project-import')) $('project-import').onclick = () => $('project-file').click();
 $('project-file').onchange = () => guarded(async () => {
   const file = $('project-file').files[0]; if (!file) return;
   const incoming = await unpackProject(file);
@@ -330,7 +333,7 @@ function stepTime(delta){guarded(async()=>{time=Math.max(0,Math.min(projectDurat
 let pendingScrub=null,scrubbing=false;
 async function scrubTo(value){if(busy||recording)return;personEditing=false;pendingScrub=Math.max(0,Math.min(projectDuration(project),value));if(scrubbing)return;scrubbing=true;try{while(pendingScrub!==null){time=pendingScrub;pendingScrub=null;timelineUI?.update();await seek();}timeline();}catch(e){status(e.message);}finally{scrubbing=false;}}
 function clipCommand(id){
-  if(id==='copy'||id==='cut'){if(!project.segments[selected])return;clipClipboard=structuredClone(project.segments[selected]);if(id==='cut')$('delete').click();else status('已複製片段，⌘V 貼到選取片段後方');return;}
+  if(id==='copy'||id==='cut'){if(!project.segments[selected])return;clipClipboard=structuredClone(project.segments[selected]);if(id==='cut')$('delete').click();else status(shortcutLabel('已複製片段，⌘V 貼到選取片段後方'));return;}
   guarded(()=>edit(p=>{const s=p.segments[selected];if(!s&&id!=='paste')throw new Error('請先選取片段');
     if(id==='duplicate')return duplicateSegment(p,selected);
     if(id==='paste'){if(!clipClipboard||!p.takes.some(t=>t.id===clipClipboard.takeId))throw new Error('請先複製此專案的片段');const segments=p.segments.slice();segments.splice(selected+1,0,structuredClone(clipClipboard));return {...p,segments};}

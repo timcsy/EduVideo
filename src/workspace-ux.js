@@ -1,4 +1,5 @@
 // Workspace chrome stays outside recorded/exported canvases.
+import { shortcutLabel } from './shortcut-label.js';
 export function enhanceWorkspace() {
   const $ = id => document.getElementById(id);
   const setup = document.createElement('section'); setup.className = 'device-setup';
@@ -9,7 +10,7 @@ export function enhanceWorkspace() {
   for (const h of inspector.querySelectorAll(':scope > h2')) if (h.textContent === '錄製裝置') h.remove();
   $('devices').textContent = '開啟相機與麥克風';
   $('toggle-notes').textContent = '側欄'; $('toggle-notes').title = '顯示或隱藏設定與講者筆記';
-  $('shortcut-hint').textContent = '空白鍵 播放／暫停 · S 分割 · ⌘Z 復原';
+  $('shortcut-hint').textContent = shortcutLabel('空白鍵 播放／暫停 · S 分割 · ⌘Z 復原');
   const ruler = document.createElement('div'); ruler.id = 'time-ruler'; ruler.setAttribute('aria-hidden', 'true'); $('seek').after(ruler);
   const observer = new MutationObserver(() => {
     const duration = Number($('seek').max);

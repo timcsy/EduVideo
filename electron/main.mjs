@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encodeMp4 } from './encode.mjs';
 import {installDesktopTools} from './desktop-tools.mjs';
+import {openProjectDialogProperties,projectPathFromArgv} from './platform.mjs';
 
 const root = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const isDev = process.env.ELECTRON_DEV === '1';
@@ -18,8 +19,13 @@ let resolveSource = null;
 let encodingController = null;
 let speechController=null;
 let modelController=null;
-let projectPath=null,pendingOpen=null;
-app.on('open-file',(event,path)=>{event.preventDefault();pendingOpen=path;mainWindow?.webContents.send('studio:project-available');});
+let projectPath=null,pendingOpen=projectPathFromArgv(process.argv);
+const offerProject=path=>{pendingOpen=path;mainWindow?.webContents.send('studio:project-available');};
+app.on('open-file',(event,path)=>{event.preventDefault();offerProject(path);});
+// Windows and Linux start a second process for a project opened from Explorer; forward it to the running studio.
+const primaryInstance=app.requestSingleInstanceLock();
+if(!primaryInstance)app.quit();
+app.on('second-instance',(_event,argv)=>{const path=projectPathFromArgv(argv);if(path)offerProject(path);if(mainWindow&&!mainWindow.isDestroyed()){if(mainWindow.isMinimized())mainWindow.restore();mainWindow.show();mainWindow.focus();}});
 const checkSender=event=>{if(event.sender!==mainWindow?.webContents||event.senderFrame!==event.sender.mainFrame)throw new Error('不允許的專案請求');};
 async function readSelectedProject(path){const stat=await lstat(path);if(stat.isDirectory()){const files=await readPackage(path);projectPath=path;return {files,path};}const bytes=new Uint8Array(await readFile(path));projectPath=null;return {bytes,path:null};}
 
@@ -130,7 +136,7 @@ async function createWindow() {
   mainWindow.on('show',()=>desktopTools?.mainShown());
 }
 
-app.whenReady().then(async () => {
+if(primaryInstance)app.whenReady().then(async () => {
   desktopTools=installDesktopTools({root,getMain:()=>mainWindow,isDev});
   ipcMain.handle('studio:capture-info',event=>{checkSender(event);return captureInfo;});
   const speechDirectory=app.isPackaged?join(process.resourcesPath,'speech'):join(root,'native','speech'),modelDirectory=join(app.getPath('userData'),'speech-models');
@@ -141,7 +147,7 @@ app.whenReady().then(async () => {
   ipcMain.handle('studio:transcribe',async(event,bytes,options={})=>{checkSender(event);if(speechController)throw new Error('正在辨識字幕');const language=typeof options==='string'?options:options.language||'zh',modelId=typeof options==='string'?'base':options.modelId||'base';speechController=new AbortController();try{return await transcribeMedia(bytes,{language,directory:speechDirectory,modelPath:await resolveSpeechModel(modelDirectory,modelId),signal:speechController.signal,progress:value=>{if(!event.sender.isDestroyed())event.sender.send('studio:speech-progress',value);}});}finally{speechController=null;}});
   ipcMain.handle('studio:cancel-speech',event=>{checkSender(event);speechController?.abort();});
   ipcMain.handle('studio:save-project',async(event,files,saveAs)=>{checkSender(event);let path=saveAs?null:projectPath;if(!path){const result=await dialog.showSaveDialog(mainWindow,{title:'儲存 EduVideo 專案',defaultPath:'未命名.eduv',buttonLabel:'儲存專案',filters:[{name:'EduVideo 專案',extensions:['eduv']}]});if(result.canceled)return null;path=result.filePath;if(!path.toLowerCase().endsWith('.eduv'))path+='.eduv';}await savePackage(path,files);projectPath=path;return {path};});
-  ipcMain.handle('studio:open-project',async event=>{checkSender(event);const result=await dialog.showOpenDialog(mainWindow,{title:'開啟 .eduv 專案',properties:['openFile','openDirectory','treatPackageAsDirectory'],filters:[{name:'EduVideo 專案',extensions:['eduv','eduvideo','zip']}]});if(result.canceled)return null;return readSelectedProject(result.filePaths[0]);});
+  ipcMain.handle('studio:open-project',async event=>{checkSender(event);const result=await dialog.showOpenDialog(mainWindow,{title:'開啟 .eduv 專案',properties:openProjectDialogProperties(),filters:[{name:'EduVideo 專案',extensions:['eduv','eduvideo','zip']}]});if(result.canceled)return null;return readSelectedProject(result.filePaths[0]);});
   ipcMain.handle('studio:pending-project',async event=>{checkSender(event);if(!pendingOpen)return null;const path=pendingOpen;pendingOpen=null;return readSelectedProject(path);});
   ipcMain.handle('studio:forget-project',event=>{checkSender(event);projectPath=null;});
   ipcMain.handle('studio:encode', async (event, bytes) => {

@@ -13,7 +13,8 @@
     "desktop:dev": "tauri dev",
     "desktop:build": "npm run build:web && tauri build",
     "electron:dev": "ELECTRON_DEV=1 electron .",
-    "electron:build": "npm run build:web && electron-builder --mac dmg"
+    "electron:build": "npm run build:web && electron-builder --mac dmg",
+    "electron:build:win": "npm run build:web && electron-builder --win nsis --x64"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.5.0",
@@ -21,17 +22,6 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
-    "extraResources": [
-      {
-        "from": "native/speech",
-        "to": "speech",
-        "filter": [
-          "whisper-cli",
-          "LICENSE*",
-          "README.md"
-        ]
-      }
-    ],
     "asarUnpack": [
       "node_modules/ffmpeg-static/**"
     ],
@@ -46,6 +36,17 @@
       "output": "electron-dist"
     },
     "mac": {
+      "extraResources": [
+        {
+          "from": "native/speech",
+          "to": "speech",
+          "filter": [
+            "whisper-cli",
+            "LICENSE*",
+            "README.md"
+          ]
+        }
+      ],
       "minimumSystemVersion": "15.0",
       "target": [
         "dmg"
@@ -81,6 +82,35 @@
         "NSMicrophoneUsageDescription": "EduVideo 需要使用麥克風錄製講解聲音。",
         "NSAudioCaptureUsageDescription": "EduVideo 需要擷取簡報播放時的系統音訊。"
       }
+    },
+    "win": {
+      "extraResources": [
+        {
+          "from": "native/speech",
+          "to": "speech",
+          "filter": [
+            "whisper-cli.exe",
+            "LICENSE*",
+            "README.md"
+          ]
+        }
+      ],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "EduVideo-Studio-Windows-x64-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "EduVideo Studio"
     }
   },
   "dependencies": {

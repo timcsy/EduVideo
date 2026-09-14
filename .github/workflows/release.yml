@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  # 手動執行只建置並上傳安裝檔供測試，不會建立 Release。
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -12,9 +14,13 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  WHISPER_VERSION: v1.8.3
+  WHISPER_COMMIT: 2eeeba56e9edd762b4b38467bab96c2517163158
+
 jobs:
-  release:
-    name: 測試並發布 macOS Electron 版本
+  macos:
+    name: macOS Apple Silicon 與 Web 版本
     runs-on: macos-14
 
     steps:
@@ -28,6 +34,7 @@ jobs:
           cache: npm
 
       - name: 驗證 tag 與 package 版本
+        if: startsWith(github.ref, 'refs/tags/')
         shell: bash
         run: |
           set -euo pipefail
@@ -52,24 +59,129 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npx electron-builder --mac dmg --arm64 --publish never
 
-      - name: 整理 Release 素材
+      - name: 整理安裝檔
         shell: bash
         run: |
           set -euo pipefail
-          version="$(printf '%s' "$GITHUB_REF_NAME" | sed 's/^v//')"
+          version="$(node -p "require('./package.json').version")"
           mkdir -p release
-
           (cd dist && zip -qr "../release/EduVideo-Studio-Web-$version.zip" .)
-
           dmg_path="$(find electron-dist -type f -name '*.dmg' -print -quit)"
           if [[ -z "$dmg_path" ]]; then
             echo "找不到 Electron DMG"
             exit 1
           fi
           cp "$dmg_path" "release/EduVideo-Studio-macOS-arm64.dmg"
-
-          (cd release && shasum -a 256 *.dmg *.zip > SHA256SUMS.txt)
           ls -lh release
+
+      - name: 上傳 macOS 與 Web 安裝檔
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: release/*
+          if-no-files-found: error
+
+  windows:
+    name: Windows x64
+    runs-on: windows-latest
+
+    steps:
+      - name: 取出原始碼
+        uses: actions/checkout@v5
+
+      - name: 設定 Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: 安裝相依套件
+        run: npm ci
+
+      - name: 執行測試
+        run: npm test
+
+      - name: 建置 whisper-cli.exe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git clone --depth 1 --branch $env:WHISPER_VERSION https://github.com/ggml-org/whisper.cpp .build-whisper
+          $commit = git -C .build-whisper rev-parse HEAD
+          if ($commit -ne $env:WHISPER_COMMIT) { throw "whisper.cpp commit $commit 與釘選版本不一致" }
+          # 靜態連結 MSVC runtime、不用 OpenMP，安裝時不需要額外的 DLL。
+          # 固定 AVX2 指令集，避免 runner 的原生最佳化在較舊的 CPU 上當掉。
+          cmake -S .build-whisper -B .build-whisper/build -A x64 `
+            -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded `
+            -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF `
+            -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_F16C=ON -DGGML_FMA=ON `
+            -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_SERVER=OFF
+          if ($LASTEXITCODE -ne 0) { throw 'cmake configure 失敗' }
+          cmake --build .build-whisper/build --config Release --target whisper-cli -j 4
+          if ($LASTEXITCODE -ne 0) { throw 'cmake build 失敗' }
+          Copy-Item .build-whisper/build/bin/Release/whisper-cli.exe native/speech/whisper-cli.exe
+          Get-ChildItem .build-whisper/build/bin/Release
+
+      - name: 在中文路徑下實際辨識語音
+        shell: pwsh
+        env:
+          SPEECH_TEST_UNICODE: '1'
+          SPEECH_TEST_MODEL: ${{ runner.temp }}/ggml-tiny.bin
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-WebRequest https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin -OutFile $env:SPEECH_TEST_MODEL
+          $sha1 = (Get-FileHash $env:SPEECH_TEST_MODEL -Algorithm SHA1).Hash.ToLower()
+          if ($sha1 -ne 'bd577a113a864445d4c299885e0cb97d4ba92b5f') { throw "模型 SHA-1 不符：$sha1" }
+          node scripts/test-speech.mjs
+          if ($LASTEXITCODE -ne 0) { throw '語音辨識測試失敗' }
+
+      - name: 建置 Web 版本
+        run: npm run build:web
+
+      - name: 建置 Electron Windows x64 安裝檔
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npx electron-builder --win nsis --x64 --publish never
+
+      - name: 確認安裝檔內容
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $resources = 'electron-dist/win-unpacked/resources'
+          foreach ($path in @("$resources/speech/whisper-cli.exe", "$resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg.exe")) {
+            if (-not (Test-Path $path)) { throw "安裝檔缺少 $path" }
+          }
+          if (Test-Path "$resources/speech/whisper-cli") { throw '安裝檔不應包含 macOS whisper-cli' }
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item electron-dist/EduVideo-Studio-Windows-x64-Setup.exe release/
+          Get-ChildItem release
+
+      - name: 上傳 Windows 安裝檔
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: release/*
+          if-no-files-found: error
+
+  release:
+    name: 建立 GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [macos, windows]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 下載所有安裝檔
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release
+          merge-multiple: true
+
+      - name: 產生 SHA256SUMS
+        run: |
+          set -euo pipefail
+          cd release
+          sha256sum * > SHA256SUMS.txt
+          ls -lh
 
       - name: 建立 GitHub Release
         uses: softprops/action-gh-release@v2
@@ -80,11 +192,12 @@ jobs:
           body: |
             ## 下載
 
-            - macOS Apple Silicon：下載 EduVideo-Studio-macOS-arm64.dmg
+            - macOS Apple Silicon：下載 EduVideo-Studio-macOS-arm64.dmg（macOS 15 或更新版本）
+            - Windows x64：下載 EduVideo-Studio-Windows-x64-Setup.exe（預覽版，需要支援 AVX2 的 CPU）
             - Web 版：下載 EduVideo-Studio-Web-版本.zip
             - SHA256SUMS.txt 可用來驗證下載檔案
 
-            目前桌面版以 Electron 為主，要求 macOS 15 或更新版本。語音辨識模型不會預先包進安裝檔，請在程式內依需求下載。
+            桌面安裝檔皆未簽章。語音辨識模型不會預先包進安裝檔，請在程式內依需求下載。
           files: release/*
           fail_on_unmatched_files: true
         env:

@@ -11,10 +11,13 @@ EduVideo Studio 是一個以 Electron 為主的教學影片錄製與剪輯工具
 | 版本 | 下載檔案 | 適用情境 |
 | --- | --- | --- |
 | Electron 桌面版 | EduVideo-Studio-macOS-arm64.dmg | Apple Silicon Mac，macOS 15 或更新版本 |
+| Electron 桌面版（Windows 預覽） | EduVideo-Studio-Windows-x64-Setup.exe | Windows 10／11 x64，CPU 需支援 AVX2 |
 | Web 版 | EduVideo-Studio-Web-版本.zip | 不安裝桌面程式，或要部署到靜態網站 |
 | 原始碼 | [GitHub repository](https://github.com/timcsy/EduVideo) | 開發、測試與自行打包 |
 
-桌面版目前是未簽章、未公證的 Electron 安裝檔。第一次開啟若被 macOS 阻擋，請在 Finder 對 App 按右鍵，選擇「打開」；也可以到「系統設定 → 隱私權與安全性」允許開啟。
+桌面版目前是未簽章、未公證的 Electron 安裝檔。第一次開啟若被 macOS 阻擋，請在 Finder 對 App 按右鍵，選擇「打開」；也可以到「系統設定 → 隱私權與安全性」允許開啟。Windows 若出現 SmartScreen 警告，請選擇「其他資訊 → 仍要執行」。
+
+Windows 上的 .eduv 專案是一般資料夾：用「開啟專案」選擇 .eduv 資料夾，舊的 .eduvideo／.zip 封裝檔改用「開啟封裝檔…」。
 
 ## 快速開始
 
@@ -124,11 +127,14 @@ EduVideo 把內容分成幾條可以獨立調整的軌道：
 
 GitHub Actions 位於 .github/workflows/release.yml。當推送符合 package.json 版本的 tag 時，Action 會：
 
-1. 安裝相依套件並執行測試。
+1. 在 macOS 與 Windows 分別安裝相依套件並執行測試。
 2. 建置 Web 版並打包成 ZIP。
 3. 使用 Electron Builder 建置 macOS Apple Silicon DMG。
-4. 產生 SHA256SUMS.txt。
-5. 在 GitHub 建立 Release 並附上所有下載檔案。
+4. 在 Windows 從釘選的 whisper.cpp 版本編譯 whisper-cli.exe，並在中文路徑下實際辨識一段語音，再建置 Windows x64 安裝檔。
+5. 產生 SHA256SUMS.txt。
+6. 在 GitHub 建立 Release 並附上所有下載檔案。
+
+在 GitHub Actions 頁面手動執行此 workflow，只會建置並上傳安裝檔供測試，不會建立 Release。
 
 例如 package.json 是 0.7.0：
 
@@ -145,7 +151,7 @@ tag 版本必須和 package.json 的 version 完全相同。Action 會在版本�
     npm test
     npm run electron:build
 
-輸出會放在 electron-dist。這個命令目前是 macOS DMG；Windows 與 Linux 桌面版需要對應平台的原生語音辨識執行檔與錄製能力，尚未由目前的 Release Action 發布。
+輸出會放在 electron-dist。這個命令建置 macOS DMG；Windows 請在 Windows 上先依 .github/workflows/release.yml 的步驟編譯 native/speech/whisper-cli.exe，再執行 npm run electron:build:win。Linux 桌面版尚未發布。
 
 ## 開發指令
 
@@ -166,8 +172,10 @@ tag 版本必須和 package.json 的 version 完全相同。Action 會在版本�
 
 ## 已知限制
 
-- 目前正式桌面下載版只提供 macOS Apple Silicon，且要求 macOS 15+。
-- native/speech/whisper-cli 目前是 macOS arm64 原生執行檔，因此不能直接拿來製作 Windows 或 Linux 安裝檔。
+- 桌面下載版提供 macOS Apple Silicon（macOS 15+）與 Windows x64 預覽版；Linux 尚未發布。
+- Windows 版的語音辨識使用 CPU，速度比 macOS 的 Metal 版本慢。
+- Windows 無法把 .eduv 資料夾設定成雙擊開啟的檔案類型；可以從程式內開啟，或把資料夾拖到 EduVideo Studio 捷徑上。
+- npm run electron:dev 使用 Unix shell 的環境變數寫法，Windows 開發時請在 PowerShell 改用 `$env:ELECTRON_DEV='1'; npx electron .`。
 - 系統音訊擷取會受到瀏覽器、macOS 權限與錄製來源限制；若系統音訊不可用，仍可使用麥克風音訊。
 - 去背品質取決於光線、背景複雜度、攝影機畫質與所選模型；分開錄製能減少即時預覽卡頓，但不會消除模型辨識誤差。
 - 字幕斷句與辨識結果仍需人工校對。

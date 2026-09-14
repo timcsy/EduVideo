@@ -1,12 +1,13 @@
 import {DEFAULT_LAYOUT} from './layout.js';
 import {BACKGROUND_PRESETS} from './background-presets.js';
+import {shortcutLabel} from './shortcut-label.js';
 export function mountEditorTools(actions) {
   const $=id=>document.getElementById(id),inspector=document.querySelector('.edit-inspector');
   const common=document.createElement('section');common.className='common-edits';common.innerHTML='<h2>常用剪輯</h2><p class="hint">點選時間軸片段 → 移動播放頭 → 分割或裁切。刪除後會自動接合。</p><div id="common-actions"></div>';
   inspector.prepend(common);
   for(const id of ['split','delete','undo','redo','move-left','move-right'])$('common-actions').append($(id));
   const commands={duplicate:'複製片段 ⌘D','trim-head':'起點設為播放頭 I','trim-tail':'終點設為播放頭 O','restore-clip':'還原完整素材'};
-  for(const [id,label]of Object.entries(commands)){const b=document.createElement('button');b.id=id;b.textContent=label;b.onclick=()=>actions.command(id);$('common-actions').append(b);}
+  for(const [id,label]of Object.entries(commands)){const b=document.createElement('button');b.id=id;b.textContent=shortcutLabel(label);b.onclick=()=>actions.command(id);$('common-actions').append(b);}
   const settings=document.createElement('section');settings.className='clip-adjustments';settings.innerHTML='<h2>選取片段</h2><label>播放速度<select id="clip-speed"><option value=".25">0.25×</option><option value=".5">0.5×</option><option value=".75">0.75×</option><option value="1" selected>正常 1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="4">4×</option></select></label><label>音量（0 為靜音）<input id="clip-volume" type="range" min="0" max="100" value="100"></label><div class="two-columns"><label>淡入（秒）<input id="clip-fadeIn" type="number" min="0" max="3" step=".1" value="0"></label><label>淡出（秒）<input id="clip-fadeOut" type="number" min="0" max="3" step=".1" value="0"></label></div><label>片段標題<input id="clip-title" maxlength="160" placeholder="顯示在影片下方"></label>';
   common.after(settings);
   for(const key of ['speed','volume','fadeIn','fadeOut','title']){const input=$(`clip-${key}`),change=()=>actions.clip(key,key==='title'?input.value:Number(input.value)/(key==='volume'?100:1),{live:input.type==='range'});input.onchange=change;if(input.type==='range')input.oninput=change;}
@@ -30,7 +31,7 @@ export function mountEditorTools(actions) {
   $('frame-back').onclick=()=>actions.step(-1/30);$('frame-next').onclick=()=>actions.step(1/30);
   const scroll=document.createElement('div');scroll.id='timeline-scroll';const content=document.createElement('div');content.id='timeline-content';scroll.append(content);toolbar.after(scroll);content.append($('seek'),$('time-ruler'),document.querySelector('.track'));
   $('timeline-zoom').oninput=()=>{content.style.width=`${Number($('timeline-zoom').value)*100}%`;};$('timeline-fit').onclick=()=>{$('timeline-zoom').value=1;$('timeline-zoom').oninput();};
-  const help=document.createElement('details');help.className='edit-help';help.innerHTML='<summary>剪輯操作與快捷鍵</summary><p>空白鍵：播放／暫停 · ← →：前後一格 · Shift＋← →：前後一秒<br>S / ⌘B：分割 · I / O：裁切至播放頭 · Delete：刪除並接合<br>⌘C / X / V：複製／剪下／貼上 · ⌘D：複製片段 · ⌘Z / ⇧⌘Z：復原／重做<br>拖片段兩端：裁切或延伸 · 拖片段本體：排序 · 右鍵：常用操作<br>畫面、人像與聲音同步剪輯；標題、速度、音量只影響選取片段。</p>';inspector.append(help);
+  const help=document.createElement('details');help.className='edit-help';help.innerHTML=shortcutLabel('<summary>剪輯操作與快捷鍵</summary><p>空白鍵：播放／暫停 · ← →：前後一格 · Shift＋← →：前後一秒<br>S / ⌘B：分割 · I / O：裁切至播放頭 · Delete：刪除並接合<br>⌘C / X / V：複製／剪下／貼上 · ⌘D：複製片段 · ⌘Z / ⇧⌘Z：復原／重做<br>拖片段兩端：裁切或延伸 · 拖片段本體：排序 · 右鍵：常用操作<br>畫面、人像與聲音同步剪輯；標題、速度、音量只影響選取片段。</p>');inspector.append(help);
   return {sync(project,index,busy){const s=project.segments[index],l={...DEFAULT_LAYOUT,...project.layout,...s?.layout};
     for(const key of ['speed','volume','fadeIn','fadeOut','title']){const input=$(`clip-${key}`);if(document.activeElement!==input)input.value=key==='volume'?(s?.volume??1)*100:s?.[key]??(key==='speed'?1:key==='title'?'':0);input.disabled=busy||!s;}
     for(const key of keys){const input=$(`person-${key}`);if(input.type==='checkbox')input.checked=l[key];else input.value=l[key];input.disabled=busy||!s;}
